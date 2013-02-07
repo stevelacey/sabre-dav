@@ -2,6 +2,8 @@
 
 namespace Sabre\DAV;
 
+use Sabre\XML\Reader;
+
 /**
  * XML utilities for WebDAV
  *
@@ -83,6 +85,24 @@ class XMLUtil {
     }
 
     /**
+     * Parses an XML document, and returns a fully parsed structure
+     *
+     * @param string $xml
+     * @return mixed
+     */
+    static function parse($xml) {
+
+        $reader = new Reader();
+
+        $reader->elementMap = [
+            '{DAV:}propfind' => 'Sabre\\DAV\\XML\\Request\\PropFind',
+        ];
+        $reader->xml($xml);
+        return $reader->parse();
+
+    }
+
+    /**
      * This method provides a generic way to load a DOMDocument for WebDAV use.
      *
      * This method throws a Sabre\DAV\Exception\BadRequest exception for any xml errors.
@@ -121,7 +141,7 @@ class XMLUtil {
 
         // We don't generally care about any whitespace
         $dom->preserveWhiteSpace = false;
-        
+
         $dom->loadXML(self::convertDAVNamespace($xml),LIBXML_NOWARNING | LIBXML_NOERROR);
 
         if ($error = libxml_get_last_error()) {

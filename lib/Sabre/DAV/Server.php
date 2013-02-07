@@ -2360,8 +2360,13 @@ class Server {
      */
     public function parsePropFindRequest($body) {
 
-        // If the propfind body was empty, it means IE is requesting 'all' properties
-        if (!$body) return [];
+        // If the propfind body was empty, it means this is an 'allprops'
+        // request.
+        if (!$body) {
+            $propFindRequest = new XML\Request\PropFind();
+            $propFindRequest->allProps = true;
+        }
+        $propFindRequest = XMLUtil::parse($body);
 
         $dom = XMLUtil::loadDOMDocument($body);
         $elem = $dom->getElementsByTagNameNS('urn:DAV','propfind')->item(0);
