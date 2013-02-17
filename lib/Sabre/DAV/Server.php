@@ -2365,14 +2365,13 @@ class Server {
         if (!$body) {
             $propFindRequest = new XML\Request\PropFind();
             $propFindRequest->allProps = true;
+        } else {
+            $propFindRequest = XMLUtil::parse($body);
         }
-        $propFindRequest = XMLUtil::parse($body);
 
-        $dom = XMLUtil::loadDOMDocument($body);
-        $elem = $dom->getElementsByTagNameNS('urn:DAV','propfind')->item(0);
-        if (is_null($elem)) throw new Exception\UnsupportedMediaType('We could not find a {DAV:}propfind element in the xml request body');
+        if (!$propFindRequest instanceof XML\Request\PropFind) throw new Exception\UnsupportedMediaType('We could not find a {DAV:}propfind element in the xml request body');
 
-        return array_keys(XMLUtil::parseProperties($elem));
+        return $propFindRequest;
 
     }
 

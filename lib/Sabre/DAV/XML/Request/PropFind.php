@@ -53,7 +53,7 @@ class PropFind implements Element {
      * If you just want to skip parsing for this element altogether, you can
      * just call $reader->next();
      *
-     * $reader->parseSubTree() will parse the entire sub-tree, and advance to
+     * $reader->parseInnerTree() will parse the entire sub-tree, and advance to
      * the next element.
      *
      * @param Reader $reader
@@ -63,8 +63,8 @@ class PropFind implements Element {
 
         $self = new self();
 
-        $subTree = $reader->parseSubTree();
-        foreach($subTree['elements'] as $elem) {
+        $subTree = $reader->parseInnerTree();
+        foreach($subTree as $elem) {
             if ($elem['name']==='{DAV:}allprop') {
                 $self->allProp = true;
             }
