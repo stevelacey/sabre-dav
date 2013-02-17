@@ -8,6 +8,17 @@ use
     Sabre\XML\Writer,
     Sabre\DAV\Exception\CannotSerialize;
 
+/**
+ * WebDAV PROPFIND request parser.
+ *
+ * This class parses the {DAV:}propfind request, as defined in:
+ *
+ * https://tools.ietf.org/html/rfc4918#section-14.20
+ *
+ * @copyright Copyright (C) 2007-2013 Rooftop Solutions. All rights reserved.
+ * @author Evert Pot (http://www.rooftopsolutions.nl/)
+ * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
+ */
 class PropFind implements Element {
 
     /**
@@ -16,6 +27,13 @@ class PropFind implements Element {
      * @var bool
      */
     public $allProp = false;
+
+    /**
+     * The property list
+     *
+     * @var null|array
+     */
+    public $properties;
 
     /**
      * The serialize method is called during xml writing.
@@ -64,15 +82,17 @@ class PropFind implements Element {
         $self = new self();
 
         $subTree = $reader->parseInnerTree();
+
         foreach($subTree as $elem) {
             if ($elem['name']==='{DAV:}allprop') {
                 $self->allProp = true;
             }
             if ($elem['name']==='{DAV:}prop') {
-                throw new \Exception('Not implemented');
+                $self->properties = array_keys($elem['value']);
             }
         }
-        throw new \Exception('Incomplete!');
+
+        return $self;
 
     }
 

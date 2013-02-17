@@ -712,13 +712,17 @@ class Server {
      */
     protected function httpPropfind($uri) {
 
-        $requestedProperties = $this->parsePropFindRequest($this->httpRequest->getBody(true));
+        $propFindRequest = $this->parsePropFindRequest($this->httpRequest->getBody(true));
 
         $depth = $this->getHTTPDepth(1);
         // The only two options for the depth of a propfind is 0 or 1
         if ($depth!=0) $depth = 1;
 
-        $newProperties = $this->getPropertiesForPath($uri,$requestedProperties,$depth);
+        $newProperties = $this->getPropertiesForPath(
+            $uri,
+            $propFindRequest->allProp? [] : $propFindRequest->properties,
+            $depth
+        );
 
         // This is a multi-status response
         $this->httpResponse->sendStatus(207);
@@ -2364,12 +2368,15 @@ class Server {
         // request.
         if (!$body) {
             $propFindRequest = new XML\Request\PropFind();
-            $propFindRequest->allProps = true;
+            $propFindRequest->allProp = true;
         } else {
             $propFindRequest = XMLUtil::parse($body);
         }
 
-        if (!$propFindRequest instanceof XML\Request\PropFind) throw new Exception\UnsupportedMediaType('We could not find a {DAV:}propfind element in the xml request body');
+        if (!$propFindRequest instanceof XML\Request\PropFind) {
+            var_dump($propFindRequest);
+            throw new Exception\UnsupportedMediaType('We could not find a {DAV:}propfind element in the xml request body');
+        }
 
         return $propFindRequest;
 

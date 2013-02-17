@@ -85,7 +85,7 @@ class XMLUtil {
     }
 
     /**
-     * Parses an XML document, and returns a fully parsed structure
+     * Parses an XML document, and returns the top-level element value.
      *
      * @param string $xml
      * @return mixed
@@ -96,9 +96,10 @@ class XMLUtil {
 
         $reader->elementMap = [
             '{DAV:}propfind' => 'Sabre\\DAV\\XML\\Request\\PropFind',
+            '{DAV:}prop'     => 'Sabre\\XML\\Element\\KeyValue',
         ];
         $reader->xml($xml);
-        return $reader->parse();
+        return $reader->parse()['value'];
 
     }
 
