@@ -944,21 +944,16 @@ class Server {
 
             }
 
-            $dom = XMLUtil::loadDOMDocument($requestBody);
-            if (XMLUtil::toClarkNotation($dom->firstChild)!=='{DAV:}mkcol') {
+            $mkColRequest = XMLUtil::parse($requestBody);
+            if (!$mkColRequest instanceof XML\Request\MkCol) {
 
                 // We must throw 415 for unsupported mkcol bodies
                 throw new Exception\UnsupportedMediaType('The request body for the MKCOL request must be a {DAV:}mkcol request construct.');
 
             }
 
-            $properties = [];
-            foreach($dom->firstChild->childNodes as $childNode) {
+            $properties = $mkColRequest->set;
 
-                if (XMLUtil::toClarkNotation($childNode)!=='{DAV:}set') continue;
-                $properties = array_merge($properties, XMLUtil::parseProperties($childNode, $this->propertyMap));
-
-            }
             if (!isset($properties['{DAV:}resourcetype']))
                 throw new Exception\BadRequest('The mkcol request must include a {DAV:}resourcetype property');
 

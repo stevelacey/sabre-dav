@@ -96,7 +96,10 @@ class XMLUtil {
 
         $reader->elementMap = [
             '{DAV:}propfind' => 'Sabre\\DAV\\XML\\Request\\PropFind',
+            '{DAV:}mkcol'    => 'Sabre\\DAV\\XML\\Request\\MkCol',
+
             '{DAV:}prop'     => 'Sabre\\XML\\Element\\KeyValue',
+            '{DAV:}set'      => 'Sabre\\XML\\Element\\KeyValue',
         ];
         $reader->xml($xml);
         return $reader->parse()['value'];
