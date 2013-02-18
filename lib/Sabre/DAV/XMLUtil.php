@@ -2,7 +2,9 @@
 
 namespace Sabre\DAV;
 
-use Sabre\XML\Reader;
+use
+    Sabre\XML\Reader,
+    Sabre\XML\ParseException;
 
 /**
  * XML utilities for WebDAV
@@ -95,14 +97,29 @@ class XMLUtil {
         $reader = new Reader();
 
         $reader->elementMap = [
+
+            // Root-level elements
             '{DAV:}propfind' => 'Sabre\\DAV\\XML\\Request\\PropFind',
             '{DAV:}mkcol'    => 'Sabre\\DAV\\XML\\Request\\MkCol',
 
-            '{DAV:}prop'     => 'Sabre\\XML\\Element\\KeyValue',
-            '{DAV:}set'      => 'Sabre\\XML\\Element\\KeyValue',
+            // Properties
+            '{DAV:}resourcetype' => 'Sabre\\DAV\\XML\\Property\\ResourceType',
+
+            // Other elements
+            '{DAV:}prop' => 'Sabre\\XML\\Element\\KeyValue',
+            '{DAV:}set'  => 'Sabre\\XML\\Element\\KeyValue',
         ];
         $reader->xml($xml);
-        return $reader->parse()['value'];
+
+        try {
+
+            return $reader->parse()['value'];
+
+        } catch (ParseException $e) {
+
+            throw new Exception\BadRequest('Error while parsing XML', null, $e);
+
+        }
 
     }
 

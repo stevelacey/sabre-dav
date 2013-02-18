@@ -19,7 +19,7 @@ use
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
-class MkCol extends Element\KeyValue {
+class MkCol implements Element {
 
     /**
      * The list of properties that will be set.
@@ -74,10 +74,20 @@ class MkCol extends Element\KeyValue {
 
         $self = new self();
 
-        $subTree = $reader->parseInnerTree();
+        /** TODO: remove later
+        static $count;
+        $count++;
 
-        if (isset($subTree['{DAV:}set']['{DAV:}prop'])) {
-            $self->set = $subTree['{DAV:}set']['{DAV:}prop'];
+        if ($count === 6) {
+            print_r(Element\KeyValue::deserializeXml($reader));
+            die();
+        }
+        */
+
+        $elems = Element\KeyValue::deserializeXml($reader);
+
+        if (isset($elems['{DAV:}set']['{DAV:}prop'])) {
+            $self->set = $elems['{DAV:}set']['{DAV:}prop'];
         }
 
         return $self;
