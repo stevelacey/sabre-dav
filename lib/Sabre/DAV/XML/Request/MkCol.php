@@ -74,16 +74,6 @@ class MkCol implements Element {
 
         $self = new self();
 
-        /** TODO: remove later
-        static $count;
-        $count++;
-
-        if ($count === 6) {
-            print_r(Element\KeyValue::deserializeXml($reader));
-            die();
-        }
-        */
-
         $elems = Element\KeyValue::deserializeXml($reader);
 
         if (isset($elems['{DAV:}set']['{DAV:}prop'])) {
