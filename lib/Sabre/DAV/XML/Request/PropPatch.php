@@ -9,20 +9,22 @@ use
     Sabre\DAV\Exception\CannotSerialize;
 
 /**
- * WebDAV Extended MKCOL request parser.
+ * WebDAV PROPPATCH request parser.
  *
- * This class parses the {DAV:}mkol request, as defined in:
+ * This class parses the {DAV:}propertyupdate request, as defined in:
  *
- * https://tools.ietf.org/html/rfc5689#section-5.1
+ * https://tools.ietf.org/html/rfc4918#section-14.20
  *
  * @copyright Copyright (C) 2007-2013 Rooftop Solutions. All rights reserved.
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
-class MkCol implements Element {
+class PropPatch implements Element {
 
     /**
-     * The list of properties that will be set.
+     * The list of properties that will be updated and removed.
+     *
+     * If a property will be removed, it's value will be set to null.
      *
      * @var array
      */
@@ -79,6 +81,14 @@ class MkCol implements Element {
         foreach($elems as $elem) {
             if ($elem['name'] === '{DAV:}set') {
                 $self->properties = array_merge($self->properties, $elem['value']['{DAV:}prop']);
+            }
+            if ($elem['name'] === '{DAV:}remove') {
+
+                // Ensuring there are no values.
+                foreach($elem['value']['{DAV:}prop'] as $remove=>$value) {
+                    $self->properties[$remove] = null;
+                }
+
             }
         }
 

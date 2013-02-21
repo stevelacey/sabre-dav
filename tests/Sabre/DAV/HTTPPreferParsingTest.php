@@ -145,13 +145,13 @@ BLA
         ));
         $request->setBody(<<<BLA
 <?xml version="1.0"?>
-<d:proppatch xmlns:d="DAV:">
+<d:propertyupdate xmlns:d="DAV:">
     <d:set>
         <d:prop>
             <d:something>nope!</d:something>
         </d:prop>
     </d:set>
-</d:proppatch>
+</d:propertyupdate>
 BLA
         );
 
@@ -180,13 +180,13 @@ BLA
         ));
         $request->setBody(<<<BLA
 <?xml version="1.0"?>
-<d:proppatch xmlns:d="DAV:">
+<d:propertyupdate xmlns:d="DAV:">
     <d:set>
         <d:prop>
             <d:something>nope!</d:something>
         </d:prop>
     </d:set>
-</d:proppatch>
+</d:propertyupdate>
 BLA
         );
 

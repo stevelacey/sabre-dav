@@ -968,7 +968,7 @@ class Server {
 
             }
 
-            $properties = $mkColRequest->set;
+            $properties = $mkColRequest->properties;
 
             if (!isset($properties['{DAV:}resourcetype']))
                 throw new Exception\BadRequest('The mkcol request must include a {DAV:}resourcetype property');
@@ -2334,33 +2334,14 @@ class Server {
     public function parsePropPatchRequest($body) {
 
         //We'll need to change the DAV namespace declaration to something else in order to make it parsable
-        $dom = XMLUtil::loadDOMDocument($body);
+        $propPatchRequest = XMLUtil::parse($body);
 
-        $newProperties = [];
-
-        foreach($dom->firstChild->childNodes as $child) {
-
-            if ($child->nodeType !== XML_ELEMENT_NODE) continue;
-
-            $operation = XMLUtil::toClarkNotation($child);
-
-            if ($operation!=='{DAV:}set' && $operation!=='{DAV:}remove') continue;
-
-            $innerProperties = XMLUtil::parseProperties($child, $this->propertyMap);
-
-            foreach($innerProperties as $propertyName=>$propertyValue) {
-
-                if ($operation==='{DAV:}remove') {
-                    $propertyValue = null;
-                }
-
-                $newProperties[$propertyName] = $propertyValue;
-
-            }
-
+        if (!$propPatchRequest instanceof XML\Request\PropPatch) {
+            throw new Exception\UnsupportedMediaType('PROPPATCH request must have a {DAV:}propertyupdate node');
         }
 
-        return $newProperties;
+
+        return $propPatchRequest->properties;
 
     }
 
