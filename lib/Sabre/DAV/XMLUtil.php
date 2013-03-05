@@ -16,6 +16,26 @@ use
 class XMLUtil {
 
     /**
+     * The Element Map used for parsing
+     *
+     * @var array
+     */
+    public $elementMap = [
+        // Root-level elements
+        '{DAV:}propfind'       => 'Sabre\\DAV\\XML\\Request\\PropFind',
+        '{DAV:}mkcol'          => 'Sabre\\DAV\\XML\\Request\\MkCol',
+        '{DAV:}propertyupdate' => 'Sabre\\DAV\\XML\\Request\\PropPatch',
+
+        // Properties
+        '{DAV:}resourcetype' => 'Sabre\\DAV\\XML\\Property\\ResourceType',
+
+        // Other elements
+        '{DAV:}prop'   => 'Sabre\\XML\\Element\\KeyValue',
+        '{DAV:}remove' => 'Sabre\\XML\\Element\\KeyValue',
+        '{DAV:}set'    => 'Sabre\\XML\\Element\\KeyValue',
+    ];
+
+    /**
      * Returns the 'clark notation' for an element.
      *
      * For example, and element encoded as:
@@ -89,34 +109,25 @@ class XMLUtil {
     /**
      * Parses an XML document, and returns the top-level element value.
      *
+     * To get the top-level element name as well, use the second argument.
+     *
      * @param string $xml
+     * @param string $rootElementName
      * @return mixed
      */
-    static function parse($xml) {
+    public function parse($xml, &$rootElementName = null) {
 
         $reader = new Reader();
 
-        $reader->elementMap = [
+        $reader->elementMap = $this->elementMap;
 
-            // Root-level elements
-            '{DAV:}propfind'       => 'Sabre\\DAV\\XML\\Request\\PropFind',
-            '{DAV:}mkcol'          => 'Sabre\\DAV\\XML\\Request\\MkCol',
-            '{DAV:}propertyupdate' => 'Sabre\\DAV\\XML\\Request\\PropPatch',
-
-            // Properties
-            '{DAV:}resourcetype' => 'Sabre\\DAV\\XML\\Property\\ResourceType',
-
-            // Other elements
-            '{DAV:}prop'   => 'Sabre\\XML\\Element\\KeyValue',
-            '{DAV:}remove' => 'Sabre\\XML\\Element\\KeyValue',
-            '{DAV:}set'    => 'Sabre\\XML\\Element\\KeyValue',
-
-        ];
         $reader->xml($xml);
 
         try {
 
-            return $reader->parse()['value'];
+            $result = $reader->parse();
+            $rootElementName = $result['name'];
+            return $result['value'];
 
         } catch (LibXMLException $e) {
 

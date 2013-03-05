@@ -153,6 +153,13 @@ class Server {
     ];
 
     /**
+     * This property is a reference to the XML utility.
+     *
+     * @var XMLUtil
+     */
+    public $xml;
+
+    /**
      * If this setting is turned off, SabreDAV's version number will be hidden
      * from various places.
      *
@@ -204,6 +211,7 @@ class Server {
         }
         $this->httpResponse = new HTTP\Response();
         $this->httpRequest = new HTTP\Request();
+        $this->xml = new XMLUtil();
 
     }
 
@@ -1098,11 +1106,9 @@ class Server {
     protected function httpReport($uri) {
 
         $body = $this->httpRequest->getBody(true);
-        $dom = XMLUtil::loadDOMDocument($body);
+        $report = $this->xml->parse($body, $reportName);
 
-        $reportName = XMLUtil::toClarkNotation($dom->firstChild);
-
-        if ($this->broadcastEvent('report',[$reportName, $dom, $uri])) {
+        if ($this->broadcastEvent('report',[$reportName, $report, $uri])) {
 
             // If broadcastEvent returned true, it means the report was not supported
             throw new Exception\ReportNotSupported();
