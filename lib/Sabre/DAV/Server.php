@@ -983,7 +983,7 @@ class Server {
 
             }
 
-            $mkColRequest = XMLUtil::parse($requestBody);
+            $mkColRequest = $this->xml->parse($requestBody);
             if (!$mkColRequest instanceof XML\Request\MkCol) {
 
                 // We must throw 415 for unsupported mkcol bodies
@@ -2355,7 +2355,7 @@ class Server {
     public function parsePropPatchRequest($body) {
 
         //We'll need to change the DAV namespace declaration to something else in order to make it parsable
-        $propPatchRequest = XMLUtil::parse($body);
+        $propPatchRequest = $this->xml->parse($body);
 
         if (!$propPatchRequest instanceof XML\Request\PropPatch) {
             throw new Exception\UnsupportedMediaType('PROPPATCH request must have a {DAV:}propertyupdate node');
@@ -2383,7 +2383,7 @@ class Server {
             $propFindRequest = new XML\Request\PropFind();
             $propFindRequest->allProp = true;
         } else {
-            $propFindRequest = XMLUtil::parse($body);
+            $propFindRequest = $this->xml->parse($body);
         }
 
         if (!$propFindRequest instanceof XML\Request\PropFind) {
