@@ -689,6 +689,7 @@ class Plugin extends DAV\ServerPlugin {
             // Requests
             '{DAV:}principal-search-property-set' => 'Sabre\\DAVACL\\XML\\Request\\PrincipalSearchPropertySetReport',
             '{DAV:}principal-property-search'     => 'Sabre\\DAVACL\\XML\\Request\\PrincipalPropertySearchReport',
+            '{DAV:}expand-property'               => 'Sabre\\DAVACL\\XML\\Request\\ExpandPropertyReport',
 
             // Other elements
             '{DAV:}property-search' => 'Sabre\\XML\\Element\\KeyValue',
@@ -1142,11 +1143,10 @@ class Plugin extends DAV\ServerPlugin {
      */
     protected function expandPropertyReport(XML\Request\ExpandPropertyReport $request) {
 
-        $requestedProperties = $this->parseExpandPropertyReportRequest($dom->firstChild->firstChild);
         $depth = $this->server->getHTTPDepth(0);
         $requestUri = $this->server->getRequestUri();
 
-        $result = $this->expandProperties($requestUri,$requestedProperties,$depth);
+        $result = $this->expandProperties($requestUri,$request->properties,$depth);
 
         $dom = new \DOMDocument('1.0','utf-8');
         $dom->formatOutput = true;
@@ -1168,42 +1168,6 @@ class Plugin extends DAV\ServerPlugin {
         $this->server->httpResponse->setHeader('Content-Type','application/xml; charset=utf-8');
         $this->server->httpResponse->sendStatus(207);
         $this->server->httpResponse->sendBody($xml);
-
-    }
-
-    /**
-     * This method is used by expandPropertyReport to parse
-     * out the entire HTTP request.
-     *
-     * @param \DOMElement $node
-     * @return array
-     */
-    protected function parseExpandPropertyReportRequest($node) {
-
-        $requestedProperties = array();
-        do {
-
-            if (DAV\XMLUtil::toClarkNotation($node)!=='{DAV:}property') continue;
-
-            if ($node->firstChild) {
-
-                $children = $this->parseExpandPropertyReportRequest($node->firstChild);
-
-            } else {
-
-                $children = array();
-
-            }
-
-            $namespace = $node->getAttribute('namespace');
-            if (!$namespace) $namespace = 'DAV:';
-
-            $propName = '{'.$namespace.'}' . $node->getAttribute('name');
-            $requestedProperties[$propName] = $children;
-
-        } while ($node = $node->nextSibling);
-
-        return $requestedProperties;
 
     }
 
