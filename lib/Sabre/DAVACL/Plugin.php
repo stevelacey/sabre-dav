@@ -684,7 +684,19 @@ class Plugin extends DAV\ServerPlugin {
         // class.
         $server->propertyMap['{DAV:}group-member-set'] = 'Sabre\\DAV\\Property\\HrefList';
 
-        $server->xml->elementMap['{DAV:}principal-search-property-set'] = 'Sabre\\DAVACL\\XML\\Request\\PrincipalSearchPropertySetReport';
+        $elements = [
+
+            // Requests
+            '{DAV:}principal-search-property-set' => 'Sabre\\DAVACL\\XML\\Request\\PrincipalSearchPropertySetReport',
+            '{DAV:}principal-property-search'     => 'Sabre\\DAVACL\\XML\\Request\\PrincipalPropertySearchReport',
+
+            // Other elements
+            '{DAV:}property-search' => 'Sabre\\XML\\Element\\KeyValue',
+        ];
+
+        foreach($elements as $k=>$v) {
+            $server->xml->elementMap[$k] = $v;
+        }
 
     }
 
@@ -1001,7 +1013,7 @@ class Plugin extends DAV\ServerPlugin {
 
             case '{DAV:}principal-property-search' :
                 $this->server->transactionType = 'report-principal-property-search';
-                $this->principalPropertySearchReport($dom);
+                $this->principalPropertySearchReport($request);
                 return false;
             case '{DAV:}principal-search-property-set' :
                 $this->server->transactionType = 'report-principal-search-property-set';
@@ -1009,7 +1021,7 @@ class Plugin extends DAV\ServerPlugin {
                 return false;
             case '{DAV:}expand-property' :
                 $this->server->transactionType = 'report-expand-property';
-                $this->expandPropertyReport($dom);
+                $this->expandPropertyReport($request);
                 return false;
 
         }
@@ -1309,18 +1321,21 @@ class Plugin extends DAV\ServerPlugin {
      * clients to search for groups of principals, based on the value of one
      * or more properties.
      *
-     * @param \DOMDocument $dom
+     * @param XML\Request\PrincipalPropertySearchReport $dom
      * @return void
      */
-    protected function principalPropertySearchReport(\DOMDocument $dom) {
+    protected function principalPropertySearchReport(XML\Request\PrincipalPropertySearchReport $request) {
 
-        list($searchProperties, $requestedProperties, $applyToPrincipalCollectionSet) = $this->parsePrincipalPropertySearchReportRequest($dom);
+        $httpDepth = $this->server->getHTTPDepth(0);
+        if ($httpDepth!==0) {
+            throw new DAV\Exception\BadRequest('This report is only defined when Depth: 0');
+        }
 
         $uri = null;
-        if (!$applyToPrincipalCollectionSet) {
+        if (!$request->applyToPrincipalCollectionSet) {
             $uri = $this->server->getRequestUri();
         }
-        $result = $this->principalSearch($searchProperties, $requestedProperties, $uri);
+        $result = $this->principalSearch($request->searchProperties, $request->properties, $uri);
 
         $prefer = $this->server->getHTTPPRefer();
 
@@ -1330,74 +1345,6 @@ class Plugin extends DAV\ServerPlugin {
         $this->server->httpResponse->sendBody($this->server->generateMultiStatus($result, $prefer['return-minimal']));
 
     }
-
-    /**
-     * parsePrincipalPropertySearchReportRequest
-     *
-     * This method parses the request body from a
-     * {DAV:}principal-property-search report.
-     *
-     * This method returns an array with two elements:
-     *  1. an array with properties to search on, and their values
-     *  2. a list of propertyvalues that should be returned for the request.
-     *
-     * @param \DOMDocument $dom
-     * @return array
-     */
-    protected function parsePrincipalPropertySearchReportRequest($dom) {
-
-        $httpDepth = $this->server->getHTTPDepth(0);
-        if ($httpDepth!==0) {
-            throw new DAV\Exception\BadRequest('This report is only defined when Depth: 0');
-        }
-
-        $searchProperties = array();
-
-        $applyToPrincipalCollectionSet = false;
-
-        // Parsing the search request
-        foreach($dom->firstChild->childNodes as $searchNode) {
-
-            if (DAV\XMLUtil::toClarkNotation($searchNode) == '{DAV:}apply-to-principal-collection-set') {
-                $applyToPrincipalCollectionSet = true;
-            }
-
-            if (DAV\XMLUtil::toClarkNotation($searchNode)!=='{DAV:}property-search')
-                continue;
-
-            $propertyName = null;
-            $propertyValue = null;
-
-            foreach($searchNode->childNodes as $childNode) {
-
-                switch(DAV\XMLUtil::toClarkNotation($childNode)) {
-
-                    case '{DAV:}prop' :
-                        $property = DAV\XMLUtil::parseProperties($searchNode);
-                        reset($property);
-                        $propertyName = key($property);
-                        break;
-
-                    case '{DAV:}match' :
-                        $propertyValue = $childNode->textContent;
-                        break;
-
-                }
-
-
-            }
-
-            if (is_null($propertyName) || is_null($propertyValue))
-                throw new DAV\Exception\BadRequest('Invalid search request. propertyname: ' . $propertyName . '. propertvvalue: ' . $propertyValue);
-
-            $searchProperties[$propertyName] = $propertyValue;
-
-        }
-
-        return array($searchProperties, array_keys(DAV\XMLUtil::parseProperties($dom->firstChild)), $applyToPrincipalCollectionSet);
-
-    }
-
 
     /* }}} */
 
