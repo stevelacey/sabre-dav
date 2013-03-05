@@ -651,8 +651,8 @@ class Plugin extends DAV\ServerPlugin {
     public function initialize(DAV\Server $server) {
 
         $this->server = $server;
-        $server->subscribeEvent('beforeGetProperties',array($this,'beforeGetProperties'));
 
+        $server->subscribeEvent('beforeGetProperties',array($this,'beforeGetProperties'));
         $server->subscribeEvent('beforeMethod', array($this,'beforeMethod'),20);
         $server->subscribeEvent('beforeBind', array($this,'beforeBind'),20);
         $server->subscribeEvent('beforeUnbind', array($this,'beforeUnbind'),20);
@@ -683,6 +683,8 @@ class Plugin extends DAV\ServerPlugin {
         // Mapping the group-member-set property to the HrefList property
         // class.
         $server->propertyMap['{DAV:}group-member-set'] = 'Sabre\\DAV\\Property\\HrefList';
+
+        $server->xml->elementMap['{DAV:}principal-search-property-set'] = 'Sabre\\DAVACL\\XML\\Request\\PrincipalSearchPropertySetReport';
 
     }
 
@@ -990,10 +992,10 @@ class Plugin extends DAV\ServerPlugin {
      * This method handles HTTP REPORT requests
      *
      * @param string $reportName
-     * @param \DOMNode $dom
+     * @param mixed $request
      * @return bool
      */
-    public function report($reportName, $dom) {
+    public function report($reportName, $request) {
 
         switch($reportName) {
 
@@ -1003,7 +1005,7 @@ class Plugin extends DAV\ServerPlugin {
                 return false;
             case '{DAV:}principal-search-property-set' :
                 $this->server->transactionType = 'report-principal-search-property-set';
-                $this->principalSearchPropertySetReport($dom);
+                $this->principalSearchPropertySetReport($request);
                 return false;
             case '{DAV:}expand-property' :
                 $this->server->transactionType = 'report-expand-property';
@@ -1251,15 +1253,12 @@ class Plugin extends DAV\ServerPlugin {
      * @param \DOMDocument $dom
      * @return void
      */
-    protected function principalSearchPropertySetReport(\DOMDocument $dom) {
+    protected function principalSearchPropertySetReport(XML\Request\PrincipalSearchPropertySetReport $request) {
 
         $httpDepth = $this->server->getHTTPDepth(0);
         if ($httpDepth!==0) {
             throw new DAV\Exception\BadRequest('This report is only defined when Depth: 0');
         }
-
-        if ($dom->firstChild->hasChildNodes())
-            throw new DAV\Exception\BadRequest('The principal-search-property-set report element is not allowed to have child elements');
 
         $dom = new \DOMDocument('1.0','utf-8');
         $dom->formatOutput = true;
