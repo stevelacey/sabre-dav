@@ -1137,10 +1137,10 @@ class Plugin extends DAV\ServerPlugin {
      * Other rfc's, such as ACL rely on this report, so it made sense to put
      * it in this plugin.
      *
-     * @param \DOMElement $dom
+     * @param XML\Request\ExpandPropertyReport $request
      * @return void
      */
-    protected function expandPropertyReport($dom) {
+    protected function expandPropertyReport(XML\Request\ExpandPropertyReport $request) {
 
         $requestedProperties = $this->parseExpandPropertyReportRequest($dom->firstChild->firstChild);
         $depth = $this->server->getHTTPDepth(0);
