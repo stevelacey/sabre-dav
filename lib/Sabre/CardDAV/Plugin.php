@@ -75,6 +75,24 @@ class Plugin extends DAV\ServerPlugin {
 
         $server->propertyMap['{http://calendarserver.org/ns/}me-card'] = 'Sabre\\DAV\\Property\\Href';
 
+        $elementMap = [
+
+            // Requests
+            '{' . self::NS_CARDDAV . '}addressbook-multiget' => 'Sabre\\CardDAV\\XML\\Request\\AddressBookMultiGetReport',
+            '{' . self::NS_CARDDAV . '}addressbook-query'    => 'Sabre\\CardDAV\\XML\\Request\\AddressBookQueryReport',
+
+            // Other
+            /*
+            '{' . self::NS_CALDAV . '}comp-filter'   => 'Sabre\\CalDAV\\XML\\Filter\\CompFilter',
+            '{' . self::NS_CALDAV . '}prop-filter'   => 'Sabre\\CalDAV\\XML\\Filter\\PropFilter',
+            '{' . self::NS_CALDAV . '}param-filter'  => 'Sabre\\CalDAV\\XML\\Filter\\ParamFilter',
+            */
+
+        ];
+        foreach($elementMap as $k=>$v) {
+            $server->xml->elementMap[$k] = $v;
+        }
+
         $this->server = $server;
 
     }
@@ -240,19 +258,19 @@ class Plugin extends DAV\ServerPlugin {
      * This functions handles REPORT requests specific to CardDAV
      *
      * @param string $reportName
-     * @param \DOMNode $dom
+     * @param mixed $request
      * @return bool
      */
-    public function report($reportName,$dom) {
+    public function report($reportName, $request) {
 
         switch($reportName) {
             case '{'.self::NS_CARDDAV.'}addressbook-multiget' :
                 $this->server->transactionType = 'report-addressbook-multiget';
-                $this->addressbookMultiGetReport($dom);
+                $this->addressbookMultiGetReport($request);
                 return false;
             case '{'.self::NS_CARDDAV.'}addressbook-query' :
                 $this->server->transactionType = 'report-addressbook-query';
-                $this->addressBookQueryReport($dom);
+                $this->addressBookQueryReport($request);
                 return false;
             default :
                 return;
@@ -268,20 +286,17 @@ class Plugin extends DAV\ServerPlugin {
      * This report is used by the client to fetch the content of a series
      * of urls. Effectively avoiding a lot of redundant requests.
      *
-     * @param \DOMNode $dom
+     * @param XML\Request\AddressBookMultiGetReport $request
      * @return void
      */
-    public function addressbookMultiGetReport($dom) {
+    public function addressBookMultiGetReport(XML\Request\AddressBookMultiGetReport $request) {
 
-        $properties = array_keys(DAV\XMLUtil::parseProperties($dom->firstChild));
-
-        $hrefElems = $dom->getElementsByTagNameNS('urn:DAV','href');
         $propertyList = array();
 
-        foreach($hrefElems as $elem) {
+        foreach($request->hrefs as $href) {
 
-            $uri = $this->server->calculateUri($elem->nodeValue);
-            list($propertyList[]) = $this->server->getPropertiesForPath($uri,$properties);
+            $uri = $this->server->calculateUri($href);
+            list($propertyList[]) = $this->server->getPropertiesForPath($uri,$request->properties);
 
         }
 
@@ -389,10 +404,10 @@ class Plugin extends DAV\ServerPlugin {
      * This report is used by the client to filter an addressbook based on a
      * complex query.
      *
-     * @param \DOMNode $dom
+     * @param XML\Request\AddressBookQueryReport $request
      * @return void
      */
-    protected function addressbookQueryReport($dom) {
+    protected function addressBookQueryReport(XML\Request\AddressBookQueryReport $request) {
 
         $query = new AddressBookQueryParser($dom);
         $query->parse();

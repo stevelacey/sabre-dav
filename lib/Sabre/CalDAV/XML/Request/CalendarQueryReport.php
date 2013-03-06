@@ -27,13 +27,6 @@ class CalendarQueryReport implements Element {
     /**
      * An array with requested properties.
      *
-     * The requested properties will be used as keys in this array. The value
-     * is normally null.
-     *
-     * If the value is an array though, it means the property must be expanded.
-     * Within the array, the sub-properties, which themselves may be null or
-     * arrays.
-     *
      * @var array
      */
     public $properties;
