@@ -82,11 +82,8 @@ class Plugin extends DAV\ServerPlugin {
             '{' . self::NS_CARDDAV . '}addressbook-query'    => 'Sabre\\CardDAV\\XML\\Request\\AddressBookQueryReport',
 
             // Other
-            /*
-            '{' . self::NS_CALDAV . '}comp-filter'   => 'Sabre\\CalDAV\\XML\\Filter\\CompFilter',
-            '{' . self::NS_CALDAV . '}prop-filter'   => 'Sabre\\CalDAV\\XML\\Filter\\PropFilter',
-            '{' . self::NS_CALDAV . '}param-filter'  => 'Sabre\\CalDAV\\XML\\Filter\\ParamFilter',
-            */
+            '{' . self::NS_CARDDAV . '}prop-filter'   => 'Sabre\\CardDAV\\XML\\Filter\\PropFilter',
+            '{' . self::NS_CARDDAV . '}param-filter'  => 'Sabre\\CardDAV\\XML\\Filter\\ParamFilter',
 
         ];
         foreach($elementMap as $k=>$v) {
@@ -409,9 +406,6 @@ class Plugin extends DAV\ServerPlugin {
      */
     protected function addressBookQueryReport(XML\Request\AddressBookQueryReport $request) {
 
-        $query = new AddressBookQueryParser($dom);
-        $query->parse();
-
         $depth = $this->server->getHTTPDepth(0);
 
         if ($depth==0) {
@@ -433,13 +427,13 @@ class Plugin extends DAV\ServerPlugin {
                 $blob = stream_get_contents($blob);
             }
 
-            if (!$this->validateFilters($blob, $query->filters, $query->test)) {
+            if (!$this->validateFilters($blob, $request->filter, $request->test)) {
                 continue;
             }
 
             $validNodes[] = $node;
 
-            if ($query->limit && $query->limit <= count($validNodes)) {
+            if ($request->limit && $request->limit <= count($validNodes)) {
                 // We hit the maximum number of items, we can stop now.
                 break;
             }
@@ -455,7 +449,7 @@ class Plugin extends DAV\ServerPlugin {
                 $href = $this->server->getRequestUri() . '/' . $validNode->getName();
             }
 
-            list($result[]) = $this->server->getPropertiesForPath($href, $query->requestedProperties, 0);
+            list($result[]) = $this->server->getPropertiesForPath($href, $request->properties, 0);
 
         }
 

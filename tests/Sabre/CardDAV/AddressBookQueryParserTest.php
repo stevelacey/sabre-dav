@@ -6,14 +6,22 @@ use Sabre\DAV;
 
 class AddressBookQueryParserTest extends \PHPUnit_Framework_TestCase {
 
+    public $elementMap = [
+        '{DAV:}prop' => 'Sabre\\XML\\Element\\KeyValue',
+        '{urn:ietf:params:xml:ns:carddav}addressbook-query' => 'Sabre\\CardDAV\\XML\\Request\\AddressBookQueryReport',
+        '{urn:ietf:params:xml:ns:carddav}prop-filter'       => 'Sabre\\CardDAV\\XML\\Filter\\PropFilter',
+        '{urn:ietf:params:xml:ns:carddav}param-filter'      => 'Sabre\\CardDAV\\XML\\Filter\\ParamFilter',
+    ];
+
     function parse($xml) {
 
         $xml = implode("\n", $xml);
-        $dom = DAV\XMLUtil::loadDOMDocument($xml);
 
-        $q = new AddressBookQueryParser($dom);
-        $q->parse();
-        return $q;
+        $util = new DAV\XMLUtil();
+        $util->elementMap = $this->elementMap;
+
+        $result = $util->parse($xml);
+        return $result;
 
     }
 
@@ -35,7 +43,7 @@ class AddressBookQueryParserTest extends \PHPUnit_Framework_TestCase {
 
         $this->assertEquals(
             array('{DAV:}foo'),
-            $q->requestedProperties
+            $q->properties
         );
 
         $this->assertEquals(
@@ -48,7 +56,7 @@ class AddressBookQueryParserTest extends \PHPUnit_Framework_TestCase {
                     'text-matches' => array(),
                 ),
             ),
-            $q->filters
+            $q->filter
         );
 
         $this->assertNull($q->limit);
@@ -72,12 +80,12 @@ class AddressBookQueryParserTest extends \PHPUnit_Framework_TestCase {
 
         $this->assertEquals(
             array('{DAV:}foo'),
-            $q->requestedProperties
+            $q->properties
         );
 
         $this->assertEquals(
             array(),
-            $q->filters
+            $q->filter
         );
 
         $this->assertNull($q->limit);
@@ -174,7 +182,7 @@ class AddressBookQueryParserTest extends \PHPUnit_Framework_TestCase {
                     'text-matches' => array(),
                 ),
             ),
-            $q->filters
+            $q->filter
         );
 
         $this->assertEquals(4,$q->limit);
@@ -224,7 +232,7 @@ class AddressBookQueryParserTest extends \PHPUnit_Framework_TestCase {
                     'text-matches' => array(),
                 ),
             ),
-            $q->filters
+            $q->filter
         );
 
     }
@@ -299,7 +307,7 @@ class AddressBookQueryParserTest extends \PHPUnit_Framework_TestCase {
                     ),
                 ),
             ),
-            $q->filters
+            $q->filter
         );
 
     }
