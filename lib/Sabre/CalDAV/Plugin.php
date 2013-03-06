@@ -218,10 +218,14 @@ class Plugin extends DAV\ServerPlugin {
         $elementMap = [
 
             // Requests
-            '{' . self::NS_CALDAV . '}calendar-multiget' => 'Sabre\\CalDAV\\XML\\Request\\CalendarMultiGetReport', 
+            '{' . self::NS_CALDAV . '}calendar-multiget' => 'Sabre\\CalDAV\\XML\\Request\\CalendarMultiGetReport',
+            '{' . self::NS_CALDAV . '}calendar-query'    => 'Sabre\\CalDAV\\XML\\Request\\CalendarQueryReport',
 
             // Other
             '{' . self::NS_CALDAV . '}calendar-data' => 'Sabre\\CalDAV\\XML\\CalendarData',
+            '{' . self::NS_CALDAV . '}comp-filter'   => 'Sabre\\CalDAV\\XML\\Filter\\CompFilter',
+            '{' . self::NS_CALDAV . '}prop-filter'   => 'Sabre\\CalDAV\\XML\\Filter\\PropFilter',
+            '{' . self::NS_CALDAV . '}param-filter'  => 'Sabre\\CalDAV\\XML\\Filter\\ParamFilter',
 
         ];
         foreach($elementMap as $k=>$v) {
@@ -511,13 +515,10 @@ class Plugin extends DAV\ServerPlugin {
      * This report is used by clients to request calendar objects based on
      * complex conditions.
      *
-     * @param \DOMNode $dom
+     * @param XML\Request\CalendarQueryReport $request
      * @return void
      */
-    public function calendarQueryReport($dom) {
-
-        $parser = new CalendarQueryParser($dom);
-        $parser->parse();
+    public function calendarQueryReport(XML\Request\CalendarQueryReport $request) {
 
         $node = $this->server->tree->getNodeForPath($this->server->getRequestUri());
         $depth = $this->server->getHTTPDepth(0);
@@ -530,7 +531,7 @@ class Plugin extends DAV\ServerPlugin {
         if ($depth == 0 && $node instanceof ICalendarObject) {
 
             $requestedCalendarData = true;
-            $requestedProperties = $parser->requestedProperties;
+            $requestedProperties = $request->properties;
 
             if (!in_array('{urn:ietf:params:xml:ns:caldav}calendar-data', $requestedProperties)) {
 
@@ -559,15 +560,15 @@ class Plugin extends DAV\ServerPlugin {
                 $validator = new CalendarQueryValidator();
 
                 $vObject = VObject\Reader::read($properties[200]['{urn:ietf:params:xml:ns:caldav}calendar-data']);
-                if ($validator->validate($vObject,$parser->filters)) {
+                if ($validator->validate($vObject,$request->filter)) {
 
                     // If the client didn't require the calendar-data property,
                     // we won't give it back.
                     if (!$requestedCalendarData) {
                         unset($properties[200]['{urn:ietf:params:xml:ns:caldav}calendar-data']);
                     } else {
-                        if ($parser->expand) {
-                            $vObject->expand($parser->expand['start'], $parser->expand['end']);
+                        if ($request->expand) {
+                            $vObject->expand($request->expand['start'], $request->expand['end']);
                             $properties[200]['{' . self::NS_CALDAV . '}calendar-data'] = $vObject->serialize();
                         }
                     }
@@ -584,17 +585,17 @@ class Plugin extends DAV\ServerPlugin {
         // for the calendar-query.
         if ($node instanceof ICalendar && $depth = 1) {
 
-            $nodePaths = $node->calendarQuery($parser->filters);
+            $nodePaths = $node->calendarQuery($request->filter);
 
             foreach($nodePaths as $path) {
 
                 list($properties) =
-                    $this->server->getPropertiesForPath($this->server->getRequestUri() . '/' . $path, $parser->requestedProperties);
+                    $this->server->getPropertiesForPath($this->server->getRequestUri() . '/' . $path, $request->properties);
 
-                if ($parser->expand) {
+                if ($request->expand) {
                     // We need to do some post-processing
                     $vObject = VObject\Reader::read($properties[200]['{urn:ietf:params:xml:ns:caldav}calendar-data']);
-                    $vObject->expand($parser->expand['start'], $parser->expand['end']);
+                    $vObject->expand($request->expand['start'], $request->expand['end']);
                     $properties[200]['{' . self::NS_CALDAV . '}calendar-data'] = $vObject->serialize();
                 }
 

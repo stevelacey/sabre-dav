@@ -1,58 +1,32 @@
 <?php
 
-namespace Sabre\CalDAV\XML\Request;
+namespace Sabre\CalDAV\XML\Filter;
 
 use
     Sabre\XML\Element,
     Sabre\XML\Reader,
     Sabre\XML\Writer,
     Sabre\DAV\Exception\CannotSerialize,
-    Sabre\CalDAV\Plugin;
+    Sabre\DAV\Exception\BadRequest,
+    Sabre\CalDAV\Plugin,
+    Sabre\VObject\DateTimeParser;
+
 
 /**
- * CalendarMultiGetReport request parser.
+ * PropFilter parser.
  *
- * This class parses the {urn:ietf:params:xml:ns:caldav}calendar-multiget
- * REPORT, as defined in:
+ * This class parses the {urn:ietf:params:xml:ns:caldav}param-filter XML
+ * element, as defined in:
  *
- * https://tools.ietf.org/html/rfc4791#section-7.9
+ * https://tools.ietf.org/html/rfc4791#section-9.7.3
+ *
+ * The result will be spit out as an array.
  *
  * @copyright Copyright (C) 2007-2013 Rooftop Solutions. All rights reserved.
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
-class CalendarMultiGetReport implements Element {
-
-    /**
-     * An array with requested properties.
-     *
-     * The requested properties will be used as keys in this array. The value
-     * is normally null.
-     *
-     * If the value is an array though, it means the property must be expanded.
-     * Within the array, the sub-properties, which themselves may be null or
-     * arrays.
-     *
-     * @var array
-     */
-    public $properties;
-
-    /**
-     * This is an array with the urls that are being requested.
-     *
-     * @var array
-     */
-    public $hrefs;
-
-    /**
-     * If the calendar data must be expanded, this will contain an array with 2
-     * elements: start and end.
-     *
-     * Each may be a DateTime or null.
-     *
-     * @var array|null
-     */
-    public $expand = null;
+class ParamFilter implements Element {
 
     /**
      * The serialize method is called during xml writing.
@@ -98,37 +72,37 @@ class CalendarMultiGetReport implements Element {
      */
     static public function deserializeXml(Reader $reader) {
 
+        $result = [
+            'name' => null,
+            'is-not-defined' => false,
+            'text-match' => null,
+        ];
+
+        $att = $reader->parseAttributes();
+        $result['name'] = $att['name'];
+
         $elems = $reader->parseInnerTree();
-        $hrefs = [];
 
-        $properties = null;
-
-        $expand = false;
-
-        foreach($elems as $elem) {
+        if (is_array($elems)) foreach($elems as $elem) {
 
             switch($elem['name']) {
 
-                case '{DAV:}prop' :
-                    if (isset($elem['value']['{' . Plugin::NS_CALDAV . '}calendar-data']['expand'])) {
-                        $expand = $elem['value']['{' . Plugin::NS_CALDAV . '}calendar-data']['expand'];
-                    }
-                    $properties = array_keys($elem['value']);
+                case '{' . Plugin::NS_CALDAV . '}is-not-defined' :
+                    $result['is-not-defined'] = true;
                     break;
-                case '{DAV:}href' :
-                    $hrefs[] = $elem['value'];
+                case '{' . Plugin::NS_CALDAV . '}text-match' :
+                    $result['text-match'] = [
+                        'negate-condition' => isset($elem['attributes']['negate-condition']) && $elem['attributes']['negate-condition']==='yes',
+                        'collation'        => isset($elem['attributes']['collation'])?$elem['attributes']['collation']:'i;ascii-casemap',
+                        'value'            => $elem['value'],
+                    ];
                     break;
 
             }
 
         }
 
-        $obj = new self();
-        $obj->properties = $properties;
-        $obj->hrefs = $hrefs;
-        $obj->expand = $expand;
-
-        return $obj;
+        return $result;
 
     }
 

@@ -5,6 +5,15 @@ use Sabre\DAV;
 
 class CalendarQueryParserTest extends \PHPUnit_Framework_TestCase {
 
+    public $elementMap = [
+        '{DAV:}prop' => 'Sabre\\XML\\Element\\KeyValue',
+        '{urn:ietf:params:xml:ns:caldav}calendar-query' => 'Sabre\\CalDAV\\XML\\Request\\CalendarQueryReport',
+        '{urn:ietf:params:xml:ns:caldav}calendar-data'  => 'Sabre\\CalDAV\\XML\\CalendarData',
+        '{urn:ietf:params:xml:ns:caldav}comp-filter'    => 'Sabre\\CalDAV\\XML\\Filter\\CompFilter',
+        '{urn:ietf:params:xml:ns:caldav}prop-filter'    => 'Sabre\\CalDAV\\XML\\Filter\\PropFilter',
+        '{urn:ietf:params:xml:ns:caldav}param-filter'   => 'Sabre\\CalDAV\\XML\\Filter\\ParamFilter',
+    ];
+
     function parse($xml) {
 
         $xml =
@@ -13,11 +22,11 @@ class CalendarQueryParserTest extends \PHPUnit_Framework_TestCase {
 ' . implode("\n", $xml) . '
 </c:calendar-query>';
 
-        $dom = DAV\XMLUtil::loadDOMDocument($xml);
+        $xmlUtil = new DAV\XMLUtil();
+        $xmlUtil->elementMap = $this->elementMap;
 
-        $q = new CalendarQueryParser($dom);
-        $q->parse();
-        return $q->filters;
+        $result = $xmlUtil->parse($xml);
+        return $result->filter;
 
     }
 
@@ -372,15 +381,14 @@ xmlns:C="urn:ietf:params:xml:ns:caldav">
 </C:calendar-query>
 BLA;
 
-        $dom = DAV\XMLUtil::loadDOMDocument($body);
-
-        $q = new CalendarQueryParser($dom);
-        $q->parse();
+        $xmlUtil = new DAV\XMLUtil();
+        $xmlUtil->elementMap = $this->elementMap;
+        $result = $xmlUtil->parse($body);
 
         $this->assertEquals(array(
             '{urn:ietf:params:xml:ns:caldav}calendar-data',
             '{DAV:}getetag',
-        ), $q->requestedProperties);
+        ), $result->properties);
 
         $expectedFilters = array(
             'name' => 'VCALENDAR',
@@ -401,7 +409,7 @@ BLA;
             'is-not-defined' => false,
         );
 
-        $this->assertEquals($expectedFilters, $q->filters);
+        $this->assertEquals($expectedFilters, $result->filter);
 
     }
 
@@ -424,10 +432,10 @@ BLA;
 ' . implode("\n", $xml) . '
 </c:calendar-query>';
 
-        $dom = DAV\XMLUtil::loadDOMDocument($xml);
-        $q = new CalendarQueryParser($dom);
-        $q->parse();
+        $xmlUtil = new DAV\XMLUtil();
+        $xmlUtil->elementMap = $this->elementMap;
 
+        $result = $xmlUtil->parse($xml);
 
         $expected = array(
             'name' => 'VCALENDAR',
@@ -439,19 +447,19 @@ BLA;
 
         $this->assertEquals(
             $expected,
-            $q->filters
+            $result->filter
         );
 
         $this->assertEquals(array(
             '{urn:ietf:params:xml:ns:caldav}calendar-data',
-        ), $q->requestedProperties);
+        ), $result->properties);
 
         $this->assertEquals(
             array(
                 'start' => new \DateTime('2011-01-01 00:00:00', new \DateTimeZone('UTC')),
                 'end' => new \DateTime('2012-01-01 00:00:00', new \DateTimeZone('UTC')),
             ),
-            $q->expand
+            $result->expand
         );
 
     }
@@ -478,9 +486,10 @@ BLA;
 ' . implode("\n", $xml) . '
 </c:calendar-query>';
 
-        $dom = DAV\XMLUtil::loadDOMDocument($xml);
-        $q = new CalendarQueryParser($dom);
-        $q->parse();
+        $xmlUtil = new DAV\XMLUtil();
+        $xmlUtil->elementMap = $this->elementMap;
+
+        $xmlUtil->parse($xml);
 
     }
     /**
@@ -505,9 +514,10 @@ BLA;
 ' . implode("\n", $xml) . '
 </c:calendar-query>';
 
-        $dom = DAV\XMLUtil::loadDOMDocument($xml);
-        $q = new CalendarQueryParser($dom);
-        $q->parse();
+        $xmlUtil = new DAV\XMLUtil();
+        $xmlUtil->elementMap = $this->elementMap;
+
+        $xmlUtil->parse($xml);
 
     }
     /**
@@ -532,9 +542,10 @@ BLA;
 ' . implode("\n", $xml) . '
 </c:calendar-query>';
 
-        $dom = DAV\XMLUtil::loadDOMDocument($xml);
-        $q = new CalendarQueryParser($dom);
-        $q->parse();
+        $xmlUtil = new DAV\XMLUtil();
+        $xmlUtil->elementMap = $this->elementMap;
+
+        $xmlUtil->parse($xml);
 
     }
 }

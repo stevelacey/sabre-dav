@@ -7,12 +7,13 @@ use
     Sabre\XML\Reader,
     Sabre\XML\Writer,
     Sabre\DAV\Exception\CannotSerialize,
+    Sabre\DAV\Exception\BadRequest,
     Sabre\CalDAV\Plugin;
 
 /**
- * CalendarMultiGetReport request parser.
+ * CalendarQueryReport request parser.
  *
- * This class parses the {urn:ietf:params:xml:ns:caldav}calendar-multiget
+ * This class parses the {urn:ietf:params:xml:ns:caldav}calendar-query
  * REPORT, as defined in:
  *
  * https://tools.ietf.org/html/rfc4791#section-7.9
@@ -21,7 +22,7 @@ use
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
-class CalendarMultiGetReport implements Element {
+class CalendarQueryReport implements Element {
 
     /**
      * An array with requested properties.
@@ -38,11 +39,11 @@ class CalendarMultiGetReport implements Element {
     public $properties;
 
     /**
-     * This is an array with the urls that are being requested.
+     * List of property/component filters.
      *
      * @var array
      */
-    public $hrefs;
+    public $filter;
 
     /**
      * If the calendar data must be expanded, this will contain an array with 2
@@ -99,11 +100,12 @@ class CalendarMultiGetReport implements Element {
     static public function deserializeXml(Reader $reader) {
 
         $elems = $reader->parseInnerTree();
-        $hrefs = [];
 
         $properties = null;
-
         $expand = false;
+        $filter = null;
+
+        if (!is_array($elems)) $elems = [];
 
         foreach($elems as $elem) {
 
@@ -115,17 +117,28 @@ class CalendarMultiGetReport implements Element {
                     }
                     $properties = array_keys($elem['value']);
                     break;
-                case '{DAV:}href' :
-                    $hrefs[] = $elem['value'];
+                case '{'.Plugin::NS_CALDAV.'}filter' :
+                    foreach($elem['value'] as $subElem) {
+                        if ($subElem['name'] === '{' . Plugin::NS_CALDAV . '}comp-filter') {
+                            if (!is_null($filter)) {
+                                throw new BadRequest('Only one top-level comp-filter may be defined');
+                            }
+                            $filter = $subElem['value'];
+                        }
+                    }
                     break;
 
             }
 
         }
 
+        if (is_null($filter)) {
+            throw new BadRequest('The {' . Plugin::NS_CALDAV . '}filter element is required for this request');
+        }
+
         $obj = new self();
         $obj->properties = $properties;
-        $obj->hrefs = $hrefs;
+        $obj->filter = $filter;
         $obj->expand = $expand;
 
         return $obj;
