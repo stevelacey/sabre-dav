@@ -214,6 +214,14 @@ class Plugin extends DAV\ServerPlugin {
             '{' . self::NS_CALENDARSERVER . '}notificationtype'
 
         );
+
+        $elementMap = [
+            '{' . self::NS_CALDAV . '}calendar-multiget' => 'Sabre\\CalDAV\\XML\\Request\\CalendarMultiGetReport', 
+        ];
+        foreach($elementMap as $k=>$v) {
+            $server->xml->elementMap[$k] = $v;
+        }
+
     }
 
     /**
@@ -260,23 +268,23 @@ class Plugin extends DAV\ServerPlugin {
      * This functions handles REPORT requests specific to CalDAV
      *
      * @param string $reportName
-     * @param \DOMNode $dom
+     * @param mixed $request
      * @return bool
      */
-    public function report($reportName,$dom) {
+    public function report($reportName, $request) {
 
         switch($reportName) {
             case '{'.self::NS_CALDAV.'}calendar-multiget' :
                 $this->server->transactionType = 'report-calendar-multiget';
-                $this->calendarMultiGetReport($dom);
+                $this->calendarMultiGetReport($request);
                 return false;
             case '{'.self::NS_CALDAV.'}calendar-query' :
                 $this->server->transactionType = 'report-calendar-query';
-                $this->calendarQueryReport($dom);
+                $this->calendarQueryReport($request);
                 return false;
             case '{'.self::NS_CALDAV.'}free-busy-query' :
                 $this->server->transactionType = 'report-free-busy-query';
-                $this->freeBusyQueryReport($dom);
+                $this->freeBusyQueryReport($request);
                 return false;
 
         }
@@ -463,10 +471,10 @@ class Plugin extends DAV\ServerPlugin {
      * This report is used by the client to fetch the content of a series
      * of urls. Effectively avoiding a lot of redundant requests.
      *
-     * @param \DOMNode $dom
+     * @param XML\Request\CalendarMultiGetReport $request
      * @return void
      */
-    public function calendarMultiGetReport($dom) {
+    public function calendarMultiGetReport(XML\Request\CalendarMultiGetReport $request) {
 
         $properties = array_keys(DAV\XMLUtil::parseProperties($dom->firstChild));
         $hrefElems = $dom->getElementsByTagNameNS('urn:DAV','href');
