@@ -216,7 +216,13 @@ class Plugin extends DAV\ServerPlugin {
         );
 
         $elementMap = [
+
+            // Requests
             '{' . self::NS_CALDAV . '}calendar-multiget' => 'Sabre\\CalDAV\\XML\\Request\\CalendarMultiGetReport', 
+
+            // Other
+            '{' . self::NS_CALDAV . '}calendar-data' => 'Sabre\\CalDAV\\XML\\CalendarData',
+
         ];
         foreach($elementMap as $k=>$v) {
             $server->xml->elementMap[$k] = $v;
@@ -476,43 +482,13 @@ class Plugin extends DAV\ServerPlugin {
      */
     public function calendarMultiGetReport(XML\Request\CalendarMultiGetReport $request) {
 
-        $properties = array_keys(DAV\XMLUtil::parseProperties($dom->firstChild));
-        $hrefElems = $dom->getElementsByTagNameNS('urn:DAV','href');
+        foreach($request->hrefs as $href) {
+            $uri = $this->server->calculateUri($href);
+            list($objProps) = $this->server->getPropertiesForPath($uri, $request->properties);
 
-        $xpath = new \DOMXPath($dom);
-        $xpath->registerNameSpace('cal',Plugin::NS_CALDAV);
-        $xpath->registerNameSpace('dav','urn:DAV');
-
-        $expand = $xpath->query('/cal:calendar-multiget/dav:prop/cal:calendar-data/cal:expand');
-        if ($expand->length>0) {
-            $expandElem = $expand->item(0);
-            $start = $expandElem->getAttribute('start');
-            $end = $expandElem->getAttribute('end');
-            if(!$start || !$end) {
-                throw new DAV\Exception\BadRequest('The "start" and "end" attributes are required for the CALDAV:expand element');
-            }
-            $start = VObject\DateTimeParser::parseDateTime($start);
-            $end = VObject\DateTimeParser::parseDateTime($end);
-
-            if ($end <= $start) {
-                throw new DAV\Exception\BadRequest('The end-date must be larger than the start-date in the expand element.');
-            }
-
-            $expand = true;
-
-        } else {
-
-            $expand = false;
-
-        }
-
-        foreach($hrefElems as $elem) {
-            $uri = $this->server->calculateUri($elem->nodeValue);
-            list($objProps) = $this->server->getPropertiesForPath($uri,$properties);
-
-            if ($expand && isset($objProps[200]['{' . self::NS_CALDAV . '}calendar-data'])) {
+            if ($request->expand && isset($objProps[200]['{' . self::NS_CALDAV . '}calendar-data'])) {
                 $vObject = VObject\Reader::read($objProps[200]['{' . self::NS_CALDAV . '}calendar-data']);
-                $vObject->expand($start, $end);
+                $vObject->expand($request->expand['start'], $request->expand['end']);
                 $objProps[200]['{' . self::NS_CALDAV . '}calendar-data'] = $vObject->serialize();
             }
 

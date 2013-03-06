@@ -7,7 +7,7 @@ use
     Sabre\XML\Reader,
     Sabre\XML\Writer,
     Sabre\DAV\Exception\CannotSerialize,
-    Sabre\DAV\Exception\BadRequest;
+    Sabre\CalDAV\Plugin;
 
 /**
  * CalendarMultiGetReport request parser.
@@ -43,6 +43,16 @@ class CalendarMultiGetReport implements Element {
      * @var array
      */
     public $hrefs;
+
+    /**
+     * If the calendar data must be expanded, this will contain an array with 2
+     * elements: start and end.
+     *
+     * Each may be a DateTime or null.
+     *
+     * @var array|null
+     */
+    public $expand = null;
 
     /**
      * The serialize method is called during xml writing.
@@ -93,11 +103,16 @@ class CalendarMultiGetReport implements Element {
 
         $properties = null;
 
+        $expand = false;
+
         foreach($elems as $elem) {
 
             switch($elem['name']) {
 
                 case '{DAV:}prop' :
+                    if (isset($elem['value']['{' . Plugin::NS_CALDAV . '}calendar-data']['expand'])) {
+                        $expand = $elem['value']['{' . Plugin::NS_CALDAV . '}calendar-data']['expand'];
+                    }
                     $properties = array_keys($elem['value']);
                     break;
                 case '{DAV:}href' :
@@ -111,6 +126,7 @@ class CalendarMultiGetReport implements Element {
         $obj = new self();
         $obj->properties = $properties;
         $obj->hrefs = $hrefs;
+        $obj->expand = $expand;
 
         return $obj;
 
