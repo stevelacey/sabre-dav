@@ -220,6 +220,10 @@ class Plugin extends DAV\ServerPlugin {
             // Requests
             '{' . self::NS_CALDAV . '}calendar-multiget' => 'Sabre\\CalDAV\\XML\\Request\\CalendarMultiGetReport',
             '{' . self::NS_CALDAV . '}calendar-query'    => 'Sabre\\CalDAV\\XML\\Request\\CalendarQueryReport',
+            '{' . self::NS_CALDAV . '}mkcalendar'        => 'Sabre\\CalDAV\\XML\\Request\\MkCalendar',
+
+            // Properties
+            '{' . self::NS_CALDAV . '}supported-calendar-component-set' => 'Sabre\\CalDAV\\XML\\Property\\SupportedCalendarComponentSet',
 
             // Other
             '{' . self::NS_CALDAV . '}calendar-data' => 'Sabre\\CalDAV\\XML\\CalendarData',
@@ -323,16 +327,9 @@ class Plugin extends DAV\ServerPlugin {
 
         if ($body) {
 
-            $dom = DAV\XMLUtil::loadDOMDocument($body);
+            $request = $this->server->xml->parse($body);
+            $properties = $request->properties;
 
-            foreach($dom->firstChild->childNodes as $child) {
-
-                if (DAV\XMLUtil::toClarkNotation($child)!=='{DAV:}set') continue;
-                foreach(DAV\XMLUtil::parseProperties($child,$this->server->propertyMap) as $k=>$prop) {
-                    $properties[$k] = $prop;
-                }
-
-            }
         }
 
         $resourceType = array('{DAV:}collection','{urn:ietf:params:xml:ns:caldav}calendar');
