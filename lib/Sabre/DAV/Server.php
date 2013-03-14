@@ -222,6 +222,8 @@ class Server {
      */
     public function exec() {
 
+        $this->xml->baseUri = $this->getBaseUri();
+
         try {
 
             // If nginx (pre-1.2) is used as a proxy server, and SabreDAV as an

@@ -92,7 +92,7 @@ class Acl implements Element {
                     break;
                 default :
                     // Assuming it's a href
-                    $writer->writeElement('{DAV:}href', $ace['principal']);
+                    $writer->writeElement('{DAV:}href', $writer->baseUri . trim($ace['principal'],'/') . '/');
             }
             $writer->endElement(); // {DAV:}principal
 

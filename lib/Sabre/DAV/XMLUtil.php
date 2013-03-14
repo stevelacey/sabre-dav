@@ -36,6 +36,13 @@ class XMLUtil {
     ];
 
     /**
+     * Base url for the server.
+     *
+     * @var string
+     */
+    public $baseUri;
+
+    /**
      * Returns the 'clark notation' for an element.
      *
      * For example, and element encoded as:
@@ -138,6 +145,25 @@ class XMLUtil {
             throw new Exception\BadRequest('Error while parsing XML', null, $e);
 
         }
+
+    }
+
+    /**
+     * Shortcut for easily writing an entire document.
+     *
+     * Value is passed to Sabre\XML\Writer::write().
+     * @return string
+     */
+    public function write(array $value) {
+
+        $writer = new Writer();
+        $writer->baseUri = $this->baseUri;
+        $writer->openMemory();
+        $writer->setIndent(true);
+        $writer->setIndentString('  ');
+        $writer->startDocument('1.0','UTF-8');
+        $writer->write($value);
+        return $writer->outputMemory();
 
     }
 
