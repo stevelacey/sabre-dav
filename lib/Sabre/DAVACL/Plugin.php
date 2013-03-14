@@ -691,8 +691,14 @@ class Plugin extends DAV\ServerPlugin {
             '{DAV:}principal-property-search'     => 'Sabre\\DAVACL\\XML\\Request\\PrincipalPropertySearchReport',
             '{DAV:}expand-property'               => 'Sabre\\DAVACL\\XML\\Request\\ExpandPropertyReport',
 
+            // Properties
+            '{DAV:}acl' => 'Sabre\\DAVACL\\XML\\Property\\Acl',
+
             // Other elements
             '{DAV:}property-search' => 'Sabre\\XML\\Element\\KeyValue',
+            '{DAV:}ace'             => 'Sabre\\XML\\Element\\KeyValue',
+            '{DAV:}grant'           => 'Sabre\\DAVACL\\XML\\Element\\Grant',
+            '{DAV:}principal'       => 'Sabre\\DAVACL\\XML\\Element\\Principal',
         ];
 
         foreach($elements as $k=>$v) {
@@ -1055,15 +1061,17 @@ class Plugin extends DAV\ServerPlugin {
     public function httpACL($uri) {
 
         $body = $this->server->httpRequest->getBody(true);
-        $dom = DAV\XMLUtil::loadDOMDocument($body);
+        $request = $this->server->xml->parse($body);
 
-        $newAcl =
-            Property\Acl::unserialize($dom->firstChild, $this->server->propertyMap)
-            ->getPrivileges();
+        $newAcl = $request->getAcl();
 
         // Normalizing urls
         foreach($newAcl as $k=>$newAce) {
-            $newAcl[$k]['principal'] = $this->server->calculateUri($newAce['principal']);
+
+            if ($newAce['principal'][0]!=='{') {
+                $newAcl[$k]['principal'] = $this->server->calculateUri($newAce['principal']);
+            }
+
         }
 
         $node = $this->server->tree->getNodeForPath($uri);

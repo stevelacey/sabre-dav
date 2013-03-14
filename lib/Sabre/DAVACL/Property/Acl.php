@@ -90,75 +90,7 @@ class Acl extends DAV\Property {
      */
     static public function unserialize(\DOMElement $dom, array $propertyMap) {
 
-        $privileges = array();
-        $xaces = $dom->getElementsByTagNameNS('urn:DAV','ace');
-        for($ii=0; $ii < $xaces->length; $ii++) {
-
-            $xace = $xaces->item($ii);
-            $principal = $xace->getElementsByTagNameNS('urn:DAV','principal');
-            if ($principal->length !== 1) {
-                throw new DAV\Exception\BadRequest('Each {DAV:}ace element must have one {DAV:}principal element');
-            }
-            $principal = Principal::unserialize($principal->item(0), $propertyMap);
-
-            switch($principal->getType()) {
-                case Principal::HREF :
-                    $principal = $principal->getHref();
-                    break;
-                case Principal::AUTHENTICATED :
-                    $principal = '{DAV:}authenticated';
-                    break;
-                case Principal::UNAUTHENTICATED :
-                    $principal = '{DAV:}unauthenticated';
-                    break;
-                case Principal::ALL :
-                    $principal = '{DAV:}all';
-                    break;
-
-            }
-
-            $protected = false;
-
-            if ($xace->getElementsByTagNameNS('urn:DAV','protected')->length > 0) {
-                $protected = true;
-            }
-
-            $grants = $xace->getElementsByTagNameNS('urn:DAV','grant');
-            if ($grants->length < 1) {
-                throw new DAV\Exception\NotImplemented('Every {DAV:}ace element must have a {DAV:}grant element. {DAV:}deny is not yet supported');
-            }
-            $grant = $grants->item(0);
-
-            $xprivs = $grant->getElementsByTagNameNS('urn:DAV','privilege');
-            for($jj=0; $jj<$xprivs->length; $jj++) {
-
-                $xpriv = $xprivs->item($jj);
-
-                $privilegeName = null;
-
-                for ($kk=0;$kk<$xpriv->childNodes->length;$kk++) {
-
-                    $childNode = $xpriv->childNodes->item($kk);
-                    if ($t = DAV\XMLUtil::toClarkNotation($childNode)) {
-                        $privilegeName = $t;
-                        break;
-                    }
-                }
-                if (is_null($privilegeName)) {
-                    throw new DAV\Exception\BadRequest('{DAV:}privilege elements must have a privilege element contained within them.');
-                }
-
-                $privileges[] = array(
-                    'principal' => $principal,
-                    'protected' => $protected,
-                    'privilege' => $privilegeName,
-                );
-
-            }
-
-        }
-
-        return new self($privileges);
+        throw new \Exception('Not Implemented');
 
     }
 

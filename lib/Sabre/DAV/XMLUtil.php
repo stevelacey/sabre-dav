@@ -117,6 +117,10 @@ class XMLUtil {
      */
     public function parse($xml, &$rootElementName = null) {
 
+        if (!$xml) {
+            throw new Exception\BadRequest('No xml was supplied');
+        }
+
         $reader = new Reader();
 
         $reader->elementMap = $this->elementMap;
