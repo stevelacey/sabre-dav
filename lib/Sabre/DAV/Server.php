@@ -798,9 +798,12 @@ class Server {
 
         $this->checkPreconditions();
 
-        $newProperties = $this->parsePropPatchRequest($this->httpRequest->getBody(true));
+        $propPatchRequest = $this->xml->parse($this->httpRequest->getBody(true));
+        if (!$propPatchRequest instanceof XML\Request\PropPatch) {
+            throw new Exception\UnsupportedMediaType('PROPPATCH request must have a {DAV:}propertyupdate node');
+        }
 
-        $result = $this->updateProperties($uri, $newProperties);
+        $result = $this->updateProperties($uri, $propPatchRequest->properties);
 
         $prefer = $this->getHTTPPrefer();
         $this->httpResponse->setHeader('Vary','Brief,Prefer');
@@ -2384,33 +2387,6 @@ class Server {
         }
 
         return $dom->saveXML();
-
-    }
-
-    /**
-     * This method parses a PropPatch request
-     *
-     * PropPatch changes the properties for a resource. This method
-     * returns a list of properties.
-     *
-     * The keys in the returned array contain the property name (e.g.: {DAV:}displayname,
-     * and the value contains the property value. If a property is to be removed the value
-     * will be null.
-     *
-     * @param string $body xml body
-     * @return array list of properties in need of updating or deletion
-     */
-    public function parsePropPatchRequest($body) {
-
-        //We'll need to change the DAV namespace declaration to something else in order to make it parsable
-        $propPatchRequest = $this->xml->parse($body);
-
-        if (!$propPatchRequest instanceof XML\Request\PropPatch) {
-            throw new Exception\UnsupportedMediaType('PROPPATCH request must have a {DAV:}propertyupdate node');
-        }
-
-
-        return $propPatchRequest->properties;
 
     }
 
