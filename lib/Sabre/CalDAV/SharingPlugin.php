@@ -94,6 +94,20 @@ class SharingPlugin extends DAV\ServerPlugin {
         $this->server->subscribeEvent('updateProperties', array($this, 'updateProperties'));
         $this->server->subscribeEvent('unknownMethod', array($this,'unknownMethod'));
 
+        $elementMap = [
+
+            // Requests
+            '{' . Plugin::NS_CALENDARSERVER . '}share'        => 'Sabre\\CalDAV\\XML\\Request\\Share',
+            '{' . Plugin::NS_CALENDARSERVER . '}invite-reply' => 'Sabre\\CalDAV\\XML\\Request\\InviteReply',
+
+            // Other
+            '{' . Plugin::NS_CALENDARSERVER . '}set'    => 'Sabre\\XML\\Element\\KeyValue',
+            '{' . Plugin::NS_CALENDARSERVER . '}remove' => 'Sabre\\XML\\Element\\KeyValue',
+
+        ];
+        foreach($elementMap as $k=>$v) {
+            $server->xml->elementMap[$k] = $v;
+        }
     }
 
     /**
@@ -289,11 +303,9 @@ class SharingPlugin extends DAV\ServerPlugin {
         // re-populated the request body with the existing data.
         $this->server->httpRequest->setBody($requestBody);
 
-        $dom = DAV\XMLUtil::loadDOMDocument($requestBody);
+        $request = $this->server->xml->parse($requestBody, $rootNode);
 
-        $documentType = DAV\XMLUtil::toClarkNotation($dom->firstChild);
-
-        switch($documentType) {
+        switch($rootNode) {
 
             // Dealing with the 'share' document, which modified invitees on a
             // calendar.
@@ -314,9 +326,7 @@ class SharingPlugin extends DAV\ServerPlugin {
                     $acl->checkPrivileges($uri, '{DAV:}write');
                 }
 
-                $mutations = $this->parseShareRequest($dom);
-
-                $node->updateShares($mutations[0], $mutations[1]);
+                $node->updateShares($request->set, $request->remove);
 
                 $this->server->httpResponse->sendStatus(200);
                 // Adding this because sending a response body may cause issues,
@@ -344,14 +354,12 @@ class SharingPlugin extends DAV\ServerPlugin {
                     $acl->checkPrivileges($uri, '{DAV:}write');
                 }
 
-                $message = $this->parseInviteReplyRequest($dom);
-
                 $url = $node->shareReply(
-                    $message['href'],
-                    $message['status'],
-                    $message['calendarUri'],
-                    $message['inReplyTo'],
-                    $message['summary']
+                    $request->href,
+                    $request->status,
+                    $request->calendarUri,
+                    $request->inReplyTo,
+                    $request->summary
                 );
 
                 $this->server->httpResponse->sendStatus(200);
@@ -436,95 +444,6 @@ class SharingPlugin extends DAV\ServerPlugin {
                 return false;
 
         }
-
-
-
-    }
-
-    /**
-     * Parses the 'share' POST request.
-     *
-     * This method returns an array, containing two arrays.
-     * The first array is a list of new sharees. Every element is a struct
-     * containing a:
-     *   * href element. (usually a mailto: address)
-     *   * commonName element (often a first and lastname, but can also be
-     *     false)
-     *   * readOnly (true or false)
-     *   * summary (A description of the share, can also be false)
-     *
-     * The second array is a list of sharees that are to be removed. This is
-     * just a simple array with 'hrefs'.
-     *
-     * @param \DOMDocument $dom
-     * @return array
-     */
-    public function parseShareRequest(\DOMDocument $dom) {
-
-        $xpath = new \DOMXPath($dom);
-        $xpath->registerNamespace('cs', Plugin::NS_CALENDARSERVER);
-        $xpath->registerNamespace('d', 'urn:DAV');
-
-        $set = array();
-        $elems = $xpath->query('cs:set');
-
-        for($i=0; $i < $elems->length; $i++) {
-
-            $xset = $elems->item($i);
-            $set[] = array(
-                'href' => $xpath->evaluate('string(d:href)', $xset),
-                'commonName' => $xpath->evaluate('string(cs:common-name)', $xset),
-                'summary' => $xpath->evaluate('string(cs:summary)', $xset),
-                'readOnly' => $xpath->evaluate('boolean(cs:read)', $xset)!==false
-            );
-
-        }
-
-        $remove = array();
-        $elems = $xpath->query('cs:remove');
-
-        for($i=0; $i < $elems->length; $i++) {
-
-            $xremove = $elems->item($i);
-            $remove[] = $xpath->evaluate('string(d:href)', $xremove);
-
-        }
-
-        return array($set, $remove);
-
-    }
-
-    /**
-     * Parses the 'invite-reply' POST request.
-     *
-     * This method returns an array, containing the following properties:
-     *   * href - The sharee who is replying
-     *   * status - One of the self::STATUS_* constants
-     *   * calendarUri - The url of the shared calendar
-     *   * inReplyTo - The unique id of the share invitation.
-     *   * summary - Optional description of the reply.
-     *
-     * @param \DOMDocument $dom
-     * @return array
-     */
-    public function parseInviteReplyRequest(\DOMDocument $dom) {
-
-        $xpath = new \DOMXPath($dom);
-        $xpath->registerNamespace('cs', Plugin::NS_CALENDARSERVER);
-        $xpath->registerNamespace('d', 'urn:DAV');
-
-        $hostHref = $xpath->evaluate('string(cs:hosturl/d:href)');
-        if (!$hostHref) {
-            throw new DAV\Exception\BadRequest('The {' . Plugin::NS_CALENDARSERVER . '}hosturl/{DAV:}href element is required');
-        }
-
-        return array(
-            'href' => $xpath->evaluate('string(d:href)'),
-            'calendarUri' => $this->server->calculateUri($hostHref),
-            'inReplyTo' => $xpath->evaluate('string(cs:in-reply-to)'),
-            'summary' => $xpath->evaluate('string(cs:summary)'),
-            'status' => $xpath->evaluate('boolean(cs:invite-accepted)')?self::STATUS_ACCEPTED:self::STATUS_DECLINED
-        );
 
     }
 
