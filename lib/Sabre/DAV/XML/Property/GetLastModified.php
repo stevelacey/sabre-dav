@@ -1,73 +1,66 @@
 <?php
 
-namespace Sabre\DAV\XML\Response;
+namespace Sabre\DAV\XML\Property;
 
 use
     Sabre\XML\Element,
     Sabre\XML\Reader,
     Sabre\XML\Writer,
-    Sabre\DAV\Exception\CannotSerialize;
+    Sabre\HTTP;
 
 /**
- * WebDAV MultiStatus parser
+ * This property represents the {DAV:}getlastmodified property.
  *
- * This class parses the {DAV:}multistatus response, as defined in:
- * https://tools.ietf.org/html/rfc4918#section-14.16
+ * Defined in:
+ * http://tools.ietf.org/html/rfc4918#section-15.7
  *
- * And it also adds the {DAV:}synctoken change from:
- * http://tools.ietf.org/html/rfc6578#section-6.4
+ * Although this is normally a simple property, windows requires us to add
+ * some new attributes.
+ *
+ * This class uses unix timestamps internally, and converts them to RFC 1123 times for
+ * serialization
  *
  * @copyright Copyright (C) 2007-2013 Rooftop Solutions. All rights reserved.
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
-class MultiStatus implements Element {
+class GetLastModified implements Element {
 
     /**
-     * The responses
+     * time
      *
-     * @var \Sabre\DAV\XML\Element\Response[]
+     * @var int
      */
-    protected $responses;
+    public $time;
 
     /**
-     * A sync token (from RFC6578).
+     * Constructor 
      *
-     * @var string
+     * @param int|DateTime $time
      */
-    protected $syncToken;
+    public function __construct($time) {
 
-    /**
-     * Constructor
-     *
-     * @param \Sabre\DAV\XML\Element\Response[] $responses
-     */
-    public function __construct(array $responses, $syncToken = null) {
+        if ($time instanceof \DateTime) {
+            $this->time = $time;
+        } elseif (is_int($time) || ctype_digit($time)) {
+            $this->time = new \DateTime('@' . $time);
+        } else {
+            $this->time = new \DateTime($time);
+        }
 
-        $this->responses = $responses;
-        $this->syncToken = $syncToken;
+        // Setting timezone to UTC
+        $this->time->setTimezone(new \DateTimeZone('UTC'));
 
     }
 
     /**
-     * Returns the response list.
+     * getTime
      *
-     * @return \Sabre\DAV\XML\Element\Response[]
+     * @return \DateTime
      */
-    public function getResponses() {
+    public function getTime() {
 
-        return $this->responses;
-
-    }
-
-    /**
-     * Returns the sync-token, if available.
-     *
-     * @return string|null
-     */
-    public function getSyncToken() {
-
-        return $this->syncToken;
+        return $this->time;
 
     }
 
@@ -88,12 +81,9 @@ class MultiStatus implements Element {
      */
     public function serializeXml(Writer $writer) {
 
-        foreach($this->getResponses() as $response) {
-            $writer->writeElement('{DAV:}response', $response);
-        }
-        if ($syncToken = $this->getSyncToken()) {
-            $writer->writeElement('{DAV:}sync-token', $syncToken);
-        }
+        $writer->write(
+            HTTP\Util::toHTTPDate($this->time)
+        );
 
     }
 
@@ -120,22 +110,9 @@ class MultiStatus implements Element {
      */
     static public function deserializeXml(Reader $reader) {
 
-        $elements = $reader->parseInnerTree();
-
-        $responses = [];
-        $syncToken = null;
-
-        if ($elements) foreach($elements as $elem) {
-            if ($elem['name'] === '{DAV:}response') {
-                $responses[] = $elem['value'];
-            }
-            if ($elem['name'] === '{DAV:}sync-token') {
-                $syncToken = $elem['value'];
-            }
-        }
-
-        return new self($responses, $syncToken);
+        return
+            new self($reader->parseInnerTree());
 
     }
-
 }
+

@@ -4,6 +4,7 @@ namespace Sabre\DAV;
 
 use
     Sabre\XML\Reader,
+    Sabre\XML\Writer,
     Sabre\XML\LibXMLException;
 
 /**
@@ -36,6 +37,11 @@ class XMLUtil {
         '{DAV:}remove'   => 'Sabre\\XML\\Element\\KeyValue',
         '{DAV:}response' => 'Sabre\\DAV\\XML\\Element\\Response',
         '{DAV:}set'      => 'Sabre\\XML\\Element\\KeyValue',
+    ];
+
+    public $namespaceMap = [
+        'DAV:' => 'd',
+        'http://sabredav.org/ns' => 's',
     ];
 
     /**
@@ -161,10 +167,11 @@ class XMLUtil {
 
         $writer = new Writer();
         $writer->baseUri = $this->baseUri;
+        $writer->namespaceMap = $this->namespaceMap;
         $writer->openMemory();
         $writer->setIndent(true);
         $writer->setIndentString('  ');
-        $writer->startDocument('1.0','UTF-8');
+        $writer->startDocument('1.0');
         $writer->write($value);
         return $writer->outputMemory();
 

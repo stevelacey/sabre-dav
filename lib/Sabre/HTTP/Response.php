@@ -30,7 +30,7 @@ class Response {
      * @param int $code
      * @return string
      */
-    public function getStatusMessage($code, $httpVersion = '1.1') {
+    static public function getStatusMessage($code, $httpVersion = '1.1') {
 
         $msg = array(
             100 => 'Continue',

@@ -18,16 +18,6 @@ class Server {
     const DEPTH_INFINITY = -1;
 
     /**
-     * Nodes that are files, should have this as the type property
-     */
-    const NODE_FILE = 1;
-
-    /**
-     * Nodes that are directories, should use this value as the type property
-     */
-    const NODE_DIRECTORY = 2;
-
-    /**
      * XML namespace for all SabreDAV related elements
      */
     const NS_SABREDAV = 'http://sabredav.org/ns';
@@ -1481,7 +1471,7 @@ class Server {
                 $headers[$header] = $properties[$property];
 
             // GetLastModified gets special cased
-            } elseif ($properties[$property] instanceof Property\GetLastModified) {
+            } elseif ($properties[$property] instanceof XML\Property\GetLastModified) {
                 $headers[$header] = HTTP\Util::toHTTPDate($properties[$property]->getTime());
             }
 
@@ -1641,7 +1631,11 @@ class Server {
             if (isset($newProperties[200][$prop])) continue;
 
             switch($prop) {
-                case '{DAV:}getlastmodified'       : if ($node->getLastModified()) $newProperties[200][$prop] = new Property\GetLastModified($node->getLastModified()); break;
+                case '{DAV:}getlastmodified' :
+                    if ($node->getLastModified()) {
+                        $newProperties[200][$prop] = new XML\Property\GetLastModified($node->getLastModified());
+                    }
+                    break;
                 case '{DAV:}getcontentlength'      :
                     if ($node instanceof IFile) {
                         $size = $node->getSize();
@@ -1669,10 +1663,10 @@ class Server {
                     foreach($this->plugins as $plugin) {
                         $reports = array_merge($reports, $plugin->getSupportedReportSet($path));
                     }
-                    $newProperties[200][$prop] = new Property\SupportedReportSet($reports);
+                    $newProperties[200][$prop] = new XML\Property\SupportedReportSet($reports);
                     break;
                 case '{DAV:}resourcetype' :
-                    $newProperties[200]['{DAV:}resourcetype'] = new Property\ResourceType();
+                    $newProperties[200]['{DAV:}resourcetype'] = new XML\Property\ResourceType();
                     foreach($this->resourceTypeMapping as $className => $resourceType) {
                         if ($node instanceof $className) $newProperties[200]['{DAV:}resourcetype']->add($resourceType);
                     }
@@ -2360,18 +2354,7 @@ class Server {
      */
     public function generateMultiStatus(array $fileProperties, $strip404s = false) {
 
-        $dom = new \DOMDocument('1.0','utf-8');
-        //$dom->formatOutput = true;
-        $multiStatus = $dom->createElement('d:multistatus');
-        $dom->appendChild($multiStatus);
-
-        // Adding in default namespaces
-        foreach($this->xmlNamespaces as $namespace=>$prefix) {
-
-            $multiStatus->setAttribute('xmlns:' . $prefix,$namespace);
-
-        }
-
+        $responses = [];
         foreach($fileProperties as $entry) {
 
             $href = $entry['href'];
@@ -2381,12 +2364,12 @@ class Server {
                 unset($entry[404]);
             }
 
-            $response = new Property\Response($href,$entry);
-            $response->serialize($this,$multiStatus);
+            $responses[] = new XML\Element\Response($href,$entry);
 
         }
+        $multiStatus = new XML\Response\MultiStatus($responses);
 
-        return $dom->saveXML();
+        return $this->xml->write(['{DAV:}multistatus' => $multiStatus]);
 
     }
 

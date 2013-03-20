@@ -92,7 +92,7 @@ class SharingPluginTest extends \Sabre\DAVServerTest {
             array()
         );
         $result = $this->server->updateProperties('calendars/user1/cal1', array(
-            '{DAV:}resourcetype' => new DAV\Property\ResourceType(array('{DAV:}collection'))
+            '{DAV:}resourcetype' => new DAV\XML\Property\ResourceType(array('{DAV:}collection'))
         ));
 
         $this->assertEquals(array(

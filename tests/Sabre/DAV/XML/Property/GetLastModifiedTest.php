@@ -1,6 +1,6 @@
 <?php
 
-namespace Sabre\DAV\Property;
+namespace Sabre\DAV\XML\Property;
 
 use Sabre\DAV;
 use Sabre\HTTP;
@@ -36,16 +36,10 @@ class GetLastModifiedTest extends \PHPUnit_Framework_TestCase {
         $dt = new \DateTime('2010-03-14 16:35', new \DateTimeZone('UTC'));
         $lastMod = new GetLastModified($dt);
 
-        $doc = new \DOMDocument();
-        $root = $doc->createElement('d:getlastmodified');
-        $root->setAttribute('xmlns:d','DAV:');
-
-        $doc->appendChild($root);
-        $server = new DAV\Server();
-
-        $lastMod->serialize($server, $root);
-
-        $xml = $doc->saveXML();
+        $xml = new DAV\XMLUtil();
+        $xml = $xml->write([
+            '{DAV:}getlastmodified' => $lastMod,
+        ]);
 
         /*
         $this->assertEquals(
@@ -57,18 +51,12 @@ HTTP\Util::toHTTPDate($dt) .
         */
         $this->assertEquals(
 '<?xml version="1.0"?>
-<d:getlastmodified xmlns:d="DAV:">' .
+<d:getlastmodified xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns">' .
 HTTP\Util::toHTTPDate($dt) .
 '</d:getlastmodified>
 ', $xml);
 
         $ok = false;
-        try {
-            GetLastModified::unserialize(DAV\XMLUtil::loadDOMDocument($xml)->firstChild, array());
-        } catch (DAV\Exception $e) {
-            $ok = true;
-        }
-        if (!$ok) $this->markTestFailed('Unserialize should not be supported');
 
     }
 

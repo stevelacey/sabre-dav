@@ -121,7 +121,22 @@ class Response implements Element {
      */
     public function serializeXml(Writer $writer) {
 
-        throw new CannotSerialize('This element cannot be serialized.');
+        if ($status = $this->getHTTPStatus()) {
+            $writer->writeElement('{DAV:}status', \Sabre\HTTP\Response::getStatusMessage($status));
+        }
+        $writer->writeElement('{DAV:}href', $writer->baseUri . $this->getHref());
+        foreach($this->getResponseProperties() as $status => $properties) {
+
+            // Skipping empty lists
+            if (!$properties) {
+                continue;
+            }
+            $writer->startElement('{DAV:}propstat');
+            $writer->writeElement('{DAV:}prop', $properties);
+            $writer->writeElement('{DAV:}status', \Sabre\HTTP\Response::getStatusMessage($status));
+            $writer->endElement(); // {DAV:}propstat
+
+        }
 
     }
 

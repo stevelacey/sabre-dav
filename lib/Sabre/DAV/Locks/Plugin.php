@@ -114,12 +114,12 @@ class Plugin extends DAV\ServerPlugin {
                 case '{DAV:}supportedlock' :
                     $val = false;
                     if ($this->locksBackend) $val = true;
-                    $newProperties[200][$propName] = new DAV\Property\SupportedLock($val);
+                    $newProperties[200][$propName] = new DAV\XML\Property\SupportedLock($val);
                     unset($newProperties[404][$propName]);
                     break;
 
                 case '{DAV:}lockdiscovery' :
-                    $newProperties[200][$propName] = new DAV\Property\LockDiscovery($this->getLocks($path));
+                    $newProperties[200][$propName] = new DAV\XML\Property\LockDiscovery($this->getLocks($path));
                     unset($newProperties[404][$propName]);
                     break;
 
@@ -404,19 +404,13 @@ class Plugin extends DAV\ServerPlugin {
      */
     protected function generateLockResponse(LockInfo $lockInfo) {
 
-        $dom = new \DOMDocument('1.0','utf-8');
-        $dom->formatOutput = true;
+        $lockDiscovery = new DAV\XML\Property\LockDiscovery(array($lockInfo),true);
 
-        $prop = $dom->createElementNS('DAV:','d:prop');
-        $dom->appendChild($prop);
-
-        $lockDiscovery = $dom->createElementNS('DAV:','d:lockdiscovery');
-        $prop->appendChild($lockDiscovery);
-
-        $lockObj = new DAV\Property\LockDiscovery(array($lockInfo),true);
-        $lockObj->serialize($this->server,$lockDiscovery);
-
-        return $dom->saveXML();
+        return $this->server->xml->write([
+            '{DAV:}prop' => [
+                '{DAV:}lockdiscovery' => $lockDiscovery
+            ]
+        ]);
 
     }
 

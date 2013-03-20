@@ -491,7 +491,7 @@ END:VCALENDAR';
 
         $prop = $props[0][200]['{DAV:}supported-report-set'];
 
-        $this->assertInstanceOf('\\Sabre\\DAV\\Property\\SupportedReportSet', $prop);
+        $this->assertInstanceOf('\\Sabre\\DAV\\XML\\Property\\SupportedReportSet', $prop);
         $value = array(
             '{DAV:}expand-property',
             '{DAV:}principal-property-search',
@@ -516,7 +516,7 @@ END:VCALENDAR';
 
         $prop = $props[0][200]['{DAV:}supported-report-set'];
 
-        $this->assertTrue($prop instanceof \Sabre\DAV\Property\SupportedReportSet);
+        $this->assertTrue($prop instanceof \Sabre\DAV\XML\Property\SupportedReportSet);
         $value = array(
             '{urn:ietf:params:xml:ns:caldav}calendar-multiget',
             '{urn:ietf:params:xml:ns:caldav}calendar-query',
@@ -543,7 +543,7 @@ END:VCALENDAR';
 
         $prop = $props[0][200]['{DAV:}supported-report-set'];
 
-        $this->assertTrue($prop instanceof \Sabre\DAV\Property\SupportedReportSet);
+        $this->assertTrue($prop instanceof \Sabre\DAV\XML\Property\SupportedReportSet);
         $value = array(
             '{DAV:}sync-collection',
             '{DAV:}expand-property',

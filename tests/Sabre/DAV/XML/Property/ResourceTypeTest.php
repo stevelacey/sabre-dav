@@ -1,6 +1,6 @@
 <?php
 
-namespace Sabre\DAV\Property;
+namespace Sabre\DAV\XML\Property;
 
 use Sabre\DAV;
 
@@ -11,10 +11,10 @@ class ResourceTypeTest extends \PHPUnit_Framework_TestCase {
         $resourceType = new ResourceType(array('{DAV:}collection'));
         $this->assertEquals(array('{DAV:}collection'),$resourceType->getValue());
 
-        $resourceType = new ResourceType(DAV\Server::NODE_FILE);
+        $resourceType = new ResourceType(null);
         $this->assertEquals(array(),$resourceType->getValue());
 
-        $resourceType = new ResourceType(DAV\Server::NODE_DIRECTORY);
+        $resourceType = new ResourceType('{DAV:}collection');
         $this->assertEquals(array('{DAV:}collection'),$resourceType->getValue());
 
         $resourceType = new ResourceType('{DAV:}principal');
@@ -29,19 +29,17 @@ class ResourceTypeTest extends \PHPUnit_Framework_TestCase {
 
         $resourceType = new ResourceType(array('{DAV:}collection','{DAV:}principal'));
 
-        $doc = new \DOMDocument();
-        $root = $doc->createElement('d:anything');
-        $root->setAttribute('xmlns:d','DAV:');
-
-        $doc->appendChild($root);
-        $server = new DAV\Server();
-        $resourceType->serialize($server, $root);
-
-        $xml = $doc->saveXML();
+        $xmlUtil = new DAV\XMLUtil();
+        $xml = $xmlUtil->write([
+            '{DAV:}anything' => $resourceType
+        ]);
 
         $this->assertEquals(
 '<?xml version="1.0"?>
-<d:anything xmlns:d="DAV:"><d:collection/><d:principal/></d:anything>
+<d:anything xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns">
+  <d:collection/>
+  <d:principal/>
+</d:anything>
 ', $xml);
 
     }
@@ -53,19 +51,16 @@ class ResourceTypeTest extends \PHPUnit_Framework_TestCase {
 
         $resourceType = new ResourceType(array('{http://example.org/NS}article'));
 
-        $doc = new \DOMDocument();
-        $root = $doc->createElement('d:anything');
-        $root->setAttribute('xmlns:d','DAV:');
-
-        $doc->appendChild($root);
-        $server = new DAV\Server();
-        $resourceType->serialize($server, $root);
-
-        $xml = $doc->saveXML();
+        $xmlUtil = new DAV\XMLUtil();
+        $xml = $xmlUtil->write([
+            '{DAV:}anything' => $resourceType
+        ]);
 
         $this->assertEquals(
 '<?xml version="1.0"?>
-<d:anything xmlns:d="DAV:"><custom:article xmlns:custom="http://example.org/NS"/></d:anything>
+<d:anything xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns">
+  <x1:article xmlns:x1="http://example.org/NS"/>
+</d:anything>
 ', $xml);
 
     }
@@ -101,9 +96,10 @@ class ResourceTypeTest extends \PHPUnit_Framework_TestCase {
 <d:anything xmlns:d="DAV:"><d:collection/><d:principal/></d:anything>
 ';
 
-        $dom = DAV\XMLUtil::loadDOMDocument($xml);
+        $xmlUtil = new DAV\XMLUtil();
+        $xmlUtil->elementMap['{DAV:}anything'] = 'Sabre\\DAV\\XML\\Property\\ResourceType';
 
-        $resourceType = ResourceType::unserialize($dom->firstChild, array());
+        $resourceType = $xmlUtil->parse($xml);
         $this->assertEquals(array('{DAV:}collection','{DAV:}principal'),$resourceType->getValue());
 
     }

@@ -1,12 +1,9 @@
 <?php
 
-namespace Sabre\DAV\Property;
+namespace Sabre\DAV\XML\Property;
 
 use Sabre\DAV;
 use Sabre\HTTP;
-
-require_once 'Sabre/HTTP/ResponseMock.php';
-require_once 'Sabre/DAV/AbstractServer.php';
 
 class SupportedReportSetTest extends DAV\AbstractServer {
 
@@ -47,7 +44,7 @@ class SupportedReportSetTest extends DAV\AbstractServer {
         $xml->registerXPathNamespace('d','urn:DAV');
 
         $data = $xml->xpath('/d:multistatus/d:response/d:propstat/d:prop');
-        $this->assertEquals(1,count($data),'We expected 1 \'d:prop\' element');
+        $this->assertEquals(1,count($data),'We expected 1 \'d:prop\' element. Full response: ' . $this->response->body);
 
         $data = $xml->xpath('/d:multistatus/d:response/d:propstat/d:prop/d:supported-report-set');
         $this->assertEquals(1,count($data),'We expected 1 \'d:supported-report-set\' element');
@@ -91,7 +88,7 @@ class SupportedReportSetTest extends DAV\AbstractServer {
         $this->assertEquals(1,count($data),'We expected 1 \'d:supported-report-set\' element');
 
         $data = $xml->xpath('/d:multistatus/d:response/d:propstat/d:prop/d:supported-report-set/d:supported-report');
-        $this->assertEquals(2,count($data),'We expected 2 \'d:supported-report\' elements');
+        $this->assertEquals(2,count($data),'We expected 2 \'d:supported-report\' elements. Full response: ' . $this->response->body);
 
         $data = $xml->xpath('/d:multistatus/d:response/d:propstat/d:prop/d:supported-report-set/d:supported-report/d:report');
         $this->assertEquals(2,count($data),'We expected 2 \'d:report\' elements');
