@@ -25,14 +25,17 @@ class XMLUtil {
         '{DAV:}propfind'       => 'Sabre\\DAV\\XML\\Request\\PropFind',
         '{DAV:}mkcol'          => 'Sabre\\DAV\\XML\\Request\\MkCol',
         '{DAV:}propertyupdate' => 'Sabre\\DAV\\XML\\Request\\PropPatch',
+        '{DAV:}multistatus'    => 'Sabre\\DAV\\XML\\Response\\MultiStatus',
 
         // Properties
         '{DAV:}resourcetype' => 'Sabre\\DAV\\XML\\Property\\ResourceType',
 
         // Other elements
-        '{DAV:}prop'   => 'Sabre\\XML\\Element\\KeyValue',
-        '{DAV:}remove' => 'Sabre\\XML\\Element\\KeyValue',
-        '{DAV:}set'    => 'Sabre\\XML\\Element\\KeyValue',
+        '{DAV:}prop'     => 'Sabre\\XML\\Element\\KeyValue',
+        '{DAV:}propstat' => 'Sabre\\XML\\Element\\KeyValue',
+        '{DAV:}remove'   => 'Sabre\\XML\\Element\\KeyValue',
+        '{DAV:}response' => 'Sabre\\DAV\\XML\\Element\\Response',
+        '{DAV:}set'      => 'Sabre\\XML\\Element\\KeyValue',
     ];
 
     /**

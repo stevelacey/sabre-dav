@@ -599,20 +599,19 @@ class Client {
      */
     public function parseMultiStatus($body) {
 
-        try {
-            $dom = XMLUtil::loadDOMDocument($body);
-        } catch (Exception\BadRequest $e) {
-            throw new \InvalidArgumentException('The body passed to parseMultiStatus could not be parsed. Is it really xml?');
+        if (!$body) {
+            throw new \InvalidArgumentException('No XML was provided');
         }
 
-        $responses = Property\ResponseList::unserialize(
-            $dom->documentElement,
-            $this->propertyMap
-        );
+        $xml = new XMLUtil();
+        foreach($this->propertyMap as $k=>$v) {
+            $xml->elementMap[$k] = $v;
+        }
+        $multiStatus = $xml->parse($body);
 
-        $result = array();
+        $result = [];
 
-        foreach($responses->getResponses() as $response) {
+        foreach($multiStatus->getResponses() as $response) {
 
             $result[$response->getHref()] = $response->getResponseProperties();
 

@@ -1,59 +1,52 @@
 <?php
 
-namespace Sabre\CalDAV\XML\Request;
+namespace Sabre\DAV\XML\Response;
 
 use
     Sabre\XML\Element,
     Sabre\XML\Reader,
     Sabre\XML\Writer,
-    Sabre\DAV\Exception\CannotSerialize,
-    Sabre\CalDAV\Plugin;
+    Sabre\DAV\Exception\CannotSerialize;
 
 /**
- * Share POST request parser
+ * WebDAV MultiStatus parser
  *
- * This class parses the share POST request, as defined in:
+ * This class parses the {DAV:}multistatus response, as defined in:
  *
- * http://svn.calendarserver.org/repository/calendarserver/CalendarServer/trunk/doc/Extensions/caldav-sharing.txt
+ * https://tools.ietf.org/html/rfc4918#section-14.16
  *
  * @copyright Copyright (C) 2007-2013 Rooftop Solutions. All rights reserved.
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
-class Share implements Element {
+class MultiStatus implements Element {
 
     /**
-     * The list of new people added or updated.
+     * The responses
      *
-     * Every element has the following keys:
-     * 1. href - An email address
-     * 2. commonName - Some name
-     * 3. summary - An optional description of the share
-     * 4. readOnly - true or false
-     *
-     * @var array
+     * @var \Sabre\DAV\XML\Element\Response[]
      */
-    public $set = [];
-
-    /**
-     * List of people removed from the share list.
-     *
-     * The list is a flat list of email addresses (including mailto:).
-     *
-     * @var array
-     */
-    public $remove = [];
+    protected $responses;
 
     /**
      * Constructor
      *
-     * @param array $set
-     * @param array $remove
+     * @param \Sabre\DAV\XML\Element\Response[] $responses
      */
-    public function __construct(array $set, array $remove) {
+    public function __construct(array $responses) {
 
-        $this->set = $set;
-        $this->remove = $remove;
+        $this->responses = $responses;
+
+    }
+
+    /**
+     * Returns the response list.
+     *
+     * @return array
+     */
+    public function getResponses() {
+
+        return $this->responses;
 
     }
 
@@ -101,34 +94,16 @@ class Share implements Element {
      */
     static public function deserializeXml(Reader $reader) {
 
-        $elems = $reader->parseInnerTree();
+        $elements = $reader->parseInnerTree();
 
-        $set = [];
-
-        foreach($elems as $elem) {
-            switch($elem['name']) {
-
-                case '{'.Plugin::NS_CALENDARSERVER.'}set' :
-                    $sharee = $elem['value'];
-
-                    $sumElem = '{'.Plugin::NS_CALENDARSERVER.'}summary';
-
-                    $set[] = [
-                        'href'       => $sharee['{DAV:}href'],
-                        'commonName' => $sharee['{'.Plugin::NS_CALENDARSERVER.'}common-name'],
-                        'summary'    => isset($sharee[$sumElem])?$sharee[$sumElem]:null,
-                        'readOnly'   => isset($sharee['{' . Plugin::NS_CALENDARSERVER . '}readOnly']),
-                    ];
-                    break;
-
-                case '{'.Plugin::NS_CALENDARSERVER.'}remove' :
-                    $remove[] = $elem['value']['{DAV:}href'];
-                    break;
-
+        $responses = [];
+        foreach($elements as $elem) {
+            if ($elem['name'] === '{DAV:}response') {
+                $responses[] = $elem['value'];
             }
         }
 
-        return new self($set, $remove);
+        return new self($responses);
 
     }
 
