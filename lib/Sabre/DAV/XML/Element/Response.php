@@ -168,8 +168,7 @@ class Response implements Element {
                     $propertyLists[$status] = $properties;
                     break;
                 case '{DAV:}status' :
-                    $status = $elem['value']['{DAV:}status'];
-                    list(, $statusCode, ) = explode(' ', $status,3);
+                    list(, $statusCode, ) = explode(' ', $elem['value'],3);
                     break;
 
             }

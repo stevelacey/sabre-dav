@@ -78,53 +78,7 @@ class ResponseList extends DAV\Property {
      */
     public static function unserialize(\DOMElement $prop, array $propertyMap) {
 
-        $xpath = new \DOMXPath( $prop->ownerDocument );
-        $xpath->registerNamespace('d','DAV:');
-
-        // Finding the 'response' element
-        $xResponses = $xpath->evaluate(
-            'd:response',
-            $prop
-        );
-
-        $result = array();
-
-        for($jj=0; $jj < $xResponses->length; $jj++) {
-
-            $xResponse = $xResponses->item($jj);
-
-            // Parsing 'href'
-            $href = Href::unserialize($xResponse, $propertyMap);
-
-            $properties = [];
-
-            // Parsing 'status' in 'd:response'
-            $responseStatus = $xpath->evaluate('string(d:status)', $xResponse);
-            if ($responseStatus) {
-                list(, $responseStatus,) = explode(' ', $responseStatus, 3);
-            }
-
-
-            // Parsing 'propstat'
-            $xPropstat = $xpath->query('d:propstat', $xResponse);
-
-            for($ii=0; $ii < $xPropstat->length; $ii++) {
-
-                // Parsing 'status'
-                $status = $xpath->evaluate('string(d:status)', $xPropstat->item($ii));
-
-                list(,$statusCode,) = explode(' ', $status, 3);
-
-                // Parsing 'prop'
-                $properties[$statusCode] = DAV\XMLUtil::parseProperties($xPropstat->item($ii), $propertyMap);
-
-            }
-
-            $result[] = new Response($href->getHref(), $properties, $responseStatus?$responseStatus:null);
-
-        }
-
-        return new self($result);
+        throw new \Exception('Unsupported');
 
     }
 

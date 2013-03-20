@@ -191,6 +191,12 @@ abstract class AbstractPDOTest extends \PHPUnit_Framework_TestCase {
         $backend->createCalendarObject($returnedId, 'id-1', $object);
         $backend->createCalendarObject($returnedId, 'id-2', $object);
 
+        $result = $backend->getMultipleCalendarObjects($returnedId, [ 'id-1', 'id-2' ]);
+
+        foreach($result as $k=>$row) {
+            $result[$k]['lastmodified'] = 'erased';
+        }
+
         $this->assertEquals([
             [
                 'id' => 1,
@@ -198,7 +204,7 @@ abstract class AbstractPDOTest extends \PHPUnit_Framework_TestCase {
                 'uri' => 'id-1',
                 'size' => strlen($object),
                 'calendardata' => $object,
-                'lastmodified' => time(),
+                'lastmodified' => 'erased',
                 'calendarid' => $returnedId,
             ],
             [
@@ -207,10 +213,10 @@ abstract class AbstractPDOTest extends \PHPUnit_Framework_TestCase {
                 'uri' => 'id-2',
                 'size' => strlen($object),
                 'calendardata' => $object,
-                'lastmodified' => time(),
+                'lastmodified' => 'erased',
                 'calendarid' => $returnedId,
             ],
-        ], $backend->getMultipleCalendarObjects($returnedId, [ 'id-1', 'id-2' ]));
+        ], $result);
 
 
     }

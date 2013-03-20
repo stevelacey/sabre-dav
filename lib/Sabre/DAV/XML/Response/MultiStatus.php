@@ -12,8 +12,10 @@ use
  * WebDAV MultiStatus parser
  *
  * This class parses the {DAV:}multistatus response, as defined in:
- *
  * https://tools.ietf.org/html/rfc4918#section-14.16
+ *
+ * And it also adds the {DAV:}synctoken change from:
+ * http://tools.ietf.org/html/rfc6578#section-6.4
  *
  * @copyright Copyright (C) 2007-2013 Rooftop Solutions. All rights reserved.
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
@@ -29,13 +31,21 @@ class MultiStatus implements Element {
     protected $responses;
 
     /**
+     * A sync token (from RFC6578).
+     *
+     * @var string
+     */
+    protected $syncToken;
+
+    /**
      * Constructor
      *
      * @param \Sabre\DAV\XML\Element\Response[] $responses
      */
-    public function __construct(array $responses) {
+    public function __construct(array $responses, $syncToken = null) {
 
         $this->responses = $responses;
+        $this->syncToken = $syncToken;
 
     }
 
@@ -47,6 +57,17 @@ class MultiStatus implements Element {
     public function getResponses() {
 
         return $this->responses;
+
+    }
+
+    /**
+     * Returns the sync-token, if available.
+     *
+     * @return string|null
+     */
+    public function getSyncToken() {
+
+        return $this->syncToken;
 
     }
 
@@ -97,13 +118,18 @@ class MultiStatus implements Element {
         $elements = $reader->parseInnerTree();
 
         $responses = [];
-        foreach($elements as $elem) {
+        $syncToken = null;
+
+        if ($elements) foreach($elements as $elem) {
             if ($elem['name'] === '{DAV:}response') {
                 $responses[] = $elem['value'];
             }
+            if ($elem['name'] === '{DAV:}sync-token') {
+                $syncToken = $elem['value'];
+            }
         }
 
-        return new self($responses);
+        return new self($responses, $syncToken);
 
     }
 

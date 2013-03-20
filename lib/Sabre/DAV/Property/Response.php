@@ -202,13 +202,7 @@ class Response extends DAV\Property implements IHref {
      */
     public static function unserialize(\DOMElement $prop, array $propertyMap) {
 
-        // Delegating this to the ResponseList property. It does make more
-        // sense there.
-
-        $result = ResponseList::unserialize($prop, $propertyMap);
-        $result = $result->getResponses();
-
-        return $result[0];
+        throw new \Exception('Unsupported');
 
     }
 
