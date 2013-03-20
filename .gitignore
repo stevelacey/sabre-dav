@@ -12,6 +12,7 @@ package.xml
 tmpdata
 tests/temp
 tests/.sabredav
+tests/cov
 *.swp
 composer.lock
 vendor
