@@ -25,7 +25,7 @@ class LockDiscovery implements Element {
     /**
      * locks
      *
-     * @var array
+     * @var \Sabre\DAV\Locks\LockInfo[]
      */
     public $locks;
 
@@ -47,7 +47,7 @@ class LockDiscovery implements Element {
     /**
      * __construct
      *
-     * @param array $locks
+     * @param \Sabre\DAV\Locks\LockInfo[] $locks
      * @param bool $revealLockToken
      */
     public function __construct($locks, $revealLockToken = false) {
