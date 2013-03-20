@@ -72,7 +72,13 @@ class SupportedCalendarComponentSet implements Element {
      */
     public function serializeXml(Writer $writer) {
 
-        throw new CannotSerialize('This element cannot be serialized.');
+       foreach($this->components as $component) {
+
+            $writer->startElement('{' . Plugin::NS_CALDAV . '}');
+            $writer->writeAttributes(['name' => $component]);
+            $writer->endElement();
+
+       }
 
     }
 

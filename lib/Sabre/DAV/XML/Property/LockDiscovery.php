@@ -41,6 +41,8 @@ class LockDiscovery implements Element {
      *
      * It was reported that showing the lockroot in the response can break
      * Office 2000 compatibility.
+     *
+     * @var bool
      */
     static public $hideLockRoot = false;
 

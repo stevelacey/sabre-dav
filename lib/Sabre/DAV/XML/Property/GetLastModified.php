@@ -29,7 +29,7 @@ class GetLastModified implements Element {
     /**
      * time
      *
-     * @var int
+     * @var \DateTime
      */
     public $time;
 

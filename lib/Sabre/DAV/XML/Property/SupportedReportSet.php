@@ -39,7 +39,7 @@ class SupportedReportSet implements Element {
      *
      * Either a string or an array of strings must be passed.
      *
-     * @param mixed $reports
+     * @param string|string[] $reports
      */
     public function __construct($reports = null) {
 
@@ -75,7 +75,7 @@ class SupportedReportSet implements Element {
     /**
      * Returns the list of supported reports
      *
-     * @return array
+     * @return string[]
      */
     public function getValue() {
 

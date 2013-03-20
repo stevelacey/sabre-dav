@@ -26,14 +26,14 @@ class SupportedLock implements Element {
     /**
      * supportsLocks
      *
-     * @var mixed
+     * @var bool
      */
     public $supportsLocks = false;
 
     /**
      * __construct
      *
-     * @param mixed $supportsLocks
+     * @param bool $supportsLocks
      */
     public function __construct($supportsLocks) {
 
