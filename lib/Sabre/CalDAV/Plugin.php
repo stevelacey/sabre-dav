@@ -484,8 +484,10 @@ class Plugin extends DAV\ServerPlugin {
     public function calendarMultiGetReport(XML\Request\CalendarMultiGetReport $request) {
 
         foreach($request->hrefs as $href) {
-            $uri = $this->server->calculateUri($href);
-            list($objProps) = $this->server->getPropertiesForPath($uri, $request->properties);
+            $uris[] = $this->server->calculateUri($href);
+        }
+
+        foreach($this->server->getPropertiesForMultiplePaths($uris, $request->properties) as $uri=>$objProps) {
 
             if ($request->expand && isset($objProps[200]['{' . self::NS_CALDAV . '}calendar-data'])) {
                 $vObject = VObject\Reader::read($objProps[200]['{' . self::NS_CALDAV . '}calendar-data']);
