@@ -13,4 +13,5 @@ before_script:
 
 script:
   - phpunit --configuration vendor/sabre/vobject/tests/phpunit.xml
+  - phpunit --configuration vendor/sabre/xml/tests/phpunit.xml
   - phpunit --configuration tests/phpunit.xml
