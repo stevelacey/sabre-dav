@@ -96,7 +96,7 @@ class Principal implements Element {
 
         $this->type = $type;
         if (( $type === self::TYPE_HREF || $type === self::TYPE_PROPERTY ) && is_null($value)) {
-            throw new DAV\Exception('The second argument must be specified when the type is HREF or PROPERTY');
+            throw new \InvalidArgumentException('The second argument must be specified when the type is HREF or PROPERTY');
         }
         if ($type === self::TYPE_HREF) {
             $this->href = $value;

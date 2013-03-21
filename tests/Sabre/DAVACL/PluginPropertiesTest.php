@@ -115,17 +115,16 @@ class PluginPropertiesTest extends \PHPUnit_Framework_TestCase {
 
         $this->assertEquals(1,count($returnedProperties[200]));
         $this->assertArrayHasKey('{DAV:}supported-privilege-set',$returnedProperties[200]);
-        $this->assertInstanceOf('Sabre\\DAVACL\\Property\\SupportedPrivilegeSet', $returnedProperties[200]['{DAV:}supported-privilege-set']);
+        $this->assertInstanceOf('Sabre\\DAVACL\\XML\\Property\\SupportedPrivilegeSet', $returnedProperties[200]['{DAV:}supported-privilege-set']);
 
         $server = new DAV\Server();
         $prop = $returnedProperties[200]['{DAV:}supported-privilege-set'];
 
-        $dom = new \DOMDocument('1.0', 'utf-8');
-        $root = $dom->createElement('d:root');
-        $root->setAttribute('xmlns:d','DAV:');
-        $dom->appendChild($root);
-        $prop->serialize($server, $root);
+        $xmlUtil= new DAV\XMLUtil();
+        $writer = $xmlUtil->getWriter();
 
+        $writer->write(['{DAV:}root' => $prop]);
+        $xml = $writer->outputMemory();
 
         $xpaths = array(
             '/d:root' => 1,
@@ -153,13 +152,13 @@ class PluginPropertiesTest extends \PHPUnit_Framework_TestCase {
 
         // reloading because php dom sucks
         $dom2 = new \DOMDocument('1.0', 'utf-8');
-        $dom2->loadXML($dom->saveXML());
+        $dom2->loadXML($xml);
 
         $dxpath = new \DOMXPath($dom2);
         $dxpath->registerNamespace('d','DAV:');
         foreach($xpaths as $xpath=>$count) {
 
-            $this->assertEquals($count, $dxpath->query($xpath)->length, 'Looking for : ' . $xpath . ', we could only find ' . $dxpath->query($xpath)->length . ' elements, while we expected ' . $count);
+            $this->assertEquals($count, $dxpath->query($xpath)->length, 'Looking for : ' . $xpath . ', we could only find ' . $dxpath->query($xpath)->length . ' elements, while we expected ' . $count . ' Full XML: ' . $xml);
 
         }
 
@@ -204,7 +203,7 @@ class PluginPropertiesTest extends \PHPUnit_Framework_TestCase {
 
         $this->assertEquals(1,count($returnedProperties[200]),'The {DAV:}acl property did not return from the list. Full list: ' . print_r($returnedProperties,true));
         $this->assertArrayHasKey('{DAV:}acl',$returnedProperties[200]);
-        $this->assertInstanceOf('Sabre\\DAVACL\\Property\\ACL', $returnedProperties[200]['{DAV:}acl']);
+        $this->assertInstanceOf('Sabre\\DAVACL\\XML\\Property\\ACL', $returnedProperties[200]['{DAV:}acl']);
 
     }
 
@@ -247,7 +246,7 @@ class PluginPropertiesTest extends \PHPUnit_Framework_TestCase {
 
         $this->assertEquals(1,count($returnedProperties[200]),'The {DAV:}acl-restrictions property did not return from the list. Full list: ' . print_r($returnedProperties,true));
         $this->assertArrayHasKey('{DAV:}acl-restrictions',$returnedProperties[200]);
-        $this->assertInstanceOf('Sabre\\DAVACL\\Property\\ACLRestrictions', $returnedProperties[200]['{DAV:}acl-restrictions']);
+        $this->assertInstanceOf('Sabre\\DAVACL\\XML\\Property\\ACLRestrictions', $returnedProperties[200]['{DAV:}acl-restrictions']);
 
     }
 
@@ -276,7 +275,7 @@ class PluginPropertiesTest extends \PHPUnit_Framework_TestCase {
 
         $this->assertTrue(isset($returnedProperties[200]));
         $this->assertTrue(isset($returnedProperties[200]['{DAV:}alternate-URI-set']));
-        $this->assertInstanceOf('Sabre\\DAV\\Property\\HrefList', $returnedProperties[200]['{DAV:}alternate-URI-set']);
+        $this->assertInstanceOf('Sabre\\DAV\\XML\\Property\\Href', $returnedProperties[200]['{DAV:}alternate-URI-set']);
 
         $this->assertEquals(array(), $returnedProperties[200]['{DAV:}alternate-URI-set']->getHrefs());
 
@@ -307,9 +306,9 @@ class PluginPropertiesTest extends \PHPUnit_Framework_TestCase {
 
         $this->assertTrue(isset($returnedProperties[200]));
         $this->assertTrue(isset($returnedProperties[200]['{DAV:}principal-URL']));
-        $this->assertInstanceOf('Sabre\\DAV\\Property\\Href', $returnedProperties[200]['{DAV:}principal-URL']);
+        $this->assertInstanceOf('Sabre\\DAV\\XML\\Property\\Href', $returnedProperties[200]['{DAV:}principal-URL']);
 
-        $this->assertEquals('principals/user/', $returnedProperties[200]['{DAV:}principal-URL']->getHref());
+        $this->assertEquals(['principals/user/'], $returnedProperties[200]['{DAV:}principal-URL']->getHrefs());
 
     }
 
@@ -338,7 +337,7 @@ class PluginPropertiesTest extends \PHPUnit_Framework_TestCase {
 
         $this->assertTrue(isset($returnedProperties[200]));
         $this->assertTrue(isset($returnedProperties[200]['{DAV:}group-member-set']));
-        $this->assertInstanceOf('Sabre\\DAV\\Property\\HrefList', $returnedProperties[200]['{DAV:}group-member-set']);
+        $this->assertInstanceOf('Sabre\\DAV\\XML\\Property\\Href', $returnedProperties[200]['{DAV:}group-member-set']);
 
         $this->assertEquals(array(), $returnedProperties[200]['{DAV:}group-member-set']->getHrefs());
 
@@ -369,7 +368,7 @@ class PluginPropertiesTest extends \PHPUnit_Framework_TestCase {
 
         $this->assertTrue(isset($returnedProperties[200]));
         $this->assertTrue(isset($returnedProperties[200]['{DAV:}group-membership']));
-        $this->assertInstanceOf('Sabre\\DAV\\Property\\HrefList', $returnedProperties[200]['{DAV:}group-membership']);
+        $this->assertInstanceOf('Sabre\\DAV\\XML\\Property\\Href', $returnedProperties[200]['{DAV:}group-membership']);
 
         $this->assertEquals(array(), $returnedProperties[200]['{DAV:}group-membership']->getHrefs());
 

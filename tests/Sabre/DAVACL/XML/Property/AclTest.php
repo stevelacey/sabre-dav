@@ -42,7 +42,7 @@ class ACLTest extends \PHPUnit_Framework_TestCase {
             '{DAV:}acl'       => 'Sabre\\DAVACL\\XML\\Property\\Acl',
             '{DAV:}ace'       => 'Sabre\\XML\\Element\\KeyValue',
             '{DAV:}grant'     => 'Sabre\\DAVACL\\XML\\Element\\Grant',
-            '{DAV:}principal' => 'Sabre\\DAVACL\\XML\\Element\\Principal',
+            '{DAV:}principal' => 'Sabre\\DAVACL\\XML\\Property\\Principal',
         ];
         $reader->xml($input);
         return $reader->parse()['value'];

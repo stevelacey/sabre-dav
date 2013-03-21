@@ -902,7 +902,7 @@ class Plugin extends DAV\ServerPlugin {
         if (false !== ($index = array_search('{DAV:}supported-privilege-set', $requestedProperties))) {
 
             unset($requestedProperties[$index]);
-            $returnedProperties[200]['{DAV:}supported-privilege-set'] = new Property\SupportedPrivilegeSet($this->getSupportedPrivilegeSet($node));
+            $returnedProperties[200]['{DAV:}supported-privilege-set'] = new XML\Property\SupportedPrivilegeSet($this->getSupportedPrivilegeSet($node));
 
         }
         if (false !== ($index = array_search('{DAV:}current-user-privilege-set', $requestedProperties))) {
@@ -914,7 +914,7 @@ class Plugin extends DAV\ServerPlugin {
                 $val = $this->getCurrentUserPrivilegeSet($node);
                 if (!is_null($val)) {
                     unset($requestedProperties[$index]);
-                    $returnedProperties[200]['{DAV:}current-user-privilege-set'] = new Property\CurrentUserPrivilegeSet($val);
+                    $returnedProperties[200]['{DAV:}current-user-privilege-set'] = new XML\Property\CurrentUserPrivilegeSet($val);
                 }
             }
 
@@ -933,7 +933,7 @@ class Plugin extends DAV\ServerPlugin {
                 $acl = $this->getACL($node);
                 if (!is_null($acl)) {
                     unset($requestedProperties[$index]);
-                    $returnedProperties[200]['{DAV:}acl'] = new Property\Acl($this->getACL($node));
+                    $returnedProperties[200]['{DAV:}acl'] = new XML\Property\Acl($this->getACL($node));
                 }
 
             }
@@ -945,7 +945,7 @@ class Plugin extends DAV\ServerPlugin {
          */
         if (false !== ($index = array_search('{DAV:}acl-restrictions', $requestedProperties))) {
             unset($requestedProperties[$index]);
-            $returnedProperties[200]['{DAV:}acl-restrictions'] = new Property\AclRestrictions();
+            $returnedProperties[200]['{DAV:}acl-restrictions'] = new XML\Property\AclRestrictions();
         }
 
         /* Adding ACL properties */
@@ -1232,44 +1232,30 @@ class Plugin extends DAV\ServerPlugin {
             throw new DAV\Exception\BadRequest('This report is only defined when Depth: 0');
         }
 
-        $dom = new \DOMDocument('1.0','utf-8');
-        $dom->formatOutput = true;
-        $root = $dom->createElement('d:principal-search-property-set');
-        $dom->appendChild($root);
-        // Adding in default namespaces
-        foreach($this->server->xmlNamespaces as $namespace=>$prefix) {
-
-            $root->setAttribute('xmlns:' . $prefix,$namespace);
-
-        }
-
-        $nsList = $this->server->xmlNamespaces;
+        $writer = $this->server->xml->getWriter();
+        $writer->startElement('{DAV:}principal-search-property-set');
 
         foreach($this->principalSearchPropertySet as $propertyName=>$description) {
 
-            $psp = $dom->createElement('d:principal-search-property');
-            $root->appendChild($psp);
+            $writer->startElement('{DAV:}principal-search-property');
 
-            $prop = $dom->createElement('d:prop');
-            $psp->appendChild($prop);
+            $writer->startElement('{DAV:}prop');
+            $writer->writeElement($propertyName);
+            $writer->endElement(); // prop
 
-            $propName = null;
-            preg_match('/^{([^}]*)}(.*)$/',$propertyName,$propName);
+            $writer->startElement('{DAV:}description');
+            $writer->writeAttribute('xml:lang','end');
+            $writer->text($description);
+            $writer->endElement(); // description
 
-            $currentProperty = $dom->createElement($nsList[$propName[1]] . ':' . $propName[2]);
-            $prop->appendChild($currentProperty);
-
-            $descriptionElem = $dom->createElement('d:description');
-            $descriptionElem->setAttribute('xml:lang','en');
-            $descriptionElem->appendChild($dom->createTextNode($description));
-            $psp->appendChild($descriptionElem);
-
+            $writer->endElement(); // principal-search-property
 
         }
+        $writer->endElement(); // principal-search-property-set
 
         $this->server->httpResponse->setHeader('Content-Type','application/xml; charset=utf-8');
         $this->server->httpResponse->sendStatus(200);
-        $this->server->httpResponse->sendBody($dom->saveXML());
+        $this->server->httpResponse->sendBody($writer->outputMemory());
 
     }
 
