@@ -6,7 +6,7 @@ use
     Sabre\XML\Element,
     Sabre\XML\Reader,
     Sabre\XML\Writer,
-    Sabre\DAVACL\XML\Element\Principal,
+    Sabre\DAVACL\XML\Property\Principal,
     Sabre\DAV\Exception\CannotSerialize,
     Sabre\DAV\Exception\BadRequest,
     Sabre\DAV\Exception\NotImplemented;

@@ -1,6 +1,6 @@
 <?php
 
-namespace Sabre\DAVACL\XML\Element;
+namespace Sabre\DAVACL\XML\Property;
 
 use
     Sabre\XML\Element,
@@ -92,7 +92,7 @@ class Principal implements Element {
      * @param int $type
      * @param string|null $value
      */
-    public function __construct($type, $value) {
+    public function __construct($type, $value = null) {
 
         $this->type = $type;
         if (( $type === self::TYPE_HREF || $type === self::TYPE_PROPERTY ) && is_null($value)) {

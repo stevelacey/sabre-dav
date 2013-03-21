@@ -32,7 +32,7 @@ class PluginPropertiesTest extends \PHPUnit_Framework_TestCase {
 
         $this->assertEquals(1,count($returnedProperties[200]));
         $this->assertArrayHasKey('{DAV:}principal-collection-set',$returnedProperties[200]);
-        $this->assertInstanceOf('Sabre\\DAV\\Property\\HrefList', $returnedProperties[200]['{DAV:}principal-collection-set']);
+        $this->assertInstanceOf('Sabre\\DAV\\XML\\Property\\Href', $returnedProperties[200]['{DAV:}principal-collection-set']);
 
         $expected = array(
             'principals1/',
@@ -67,8 +67,8 @@ class PluginPropertiesTest extends \PHPUnit_Framework_TestCase {
 
         $this->assertEquals(1,count($returnedProperties[200]));
         $this->assertArrayHasKey('{DAV:}current-user-principal',$returnedProperties[200]);
-        $this->assertInstanceOf('Sabre\DAVACL\Property\Principal', $returnedProperties[200]['{DAV:}current-user-principal']);
-        $this->assertEquals(Property\Principal::UNAUTHENTICATED, $returnedProperties[200]['{DAV:}current-user-principal']->getType());
+        $this->assertInstanceOf('Sabre\DAVACL\XML\Property\Principal', $returnedProperties[200]['{DAV:}current-user-principal']);
+        $this->assertEquals(XML\Property\Principal::TYPE_UNAUTHENTICATED, $returnedProperties[200]['{DAV:}current-user-principal']->getType());
 
         // This will force the login
         $fakeServer->broadCastEvent('beforeMethod',array('GET',''));
@@ -89,8 +89,8 @@ class PluginPropertiesTest extends \PHPUnit_Framework_TestCase {
 
         $this->assertEquals(1,count($returnedProperties[200]));
         $this->assertArrayHasKey('{DAV:}current-user-principal',$returnedProperties[200]);
-        $this->assertInstanceOf('Sabre\DAVACL\Property\Principal', $returnedProperties[200]['{DAV:}current-user-principal']);
-        $this->assertEquals(Property\Principal::HREF, $returnedProperties[200]['{DAV:}current-user-principal']->getType());
+        $this->assertInstanceOf('Sabre\DAVACL\XML\Property\Principal', $returnedProperties[200]['{DAV:}current-user-principal']);
+        $this->assertEquals(XML\Property\Principal::TYPE_HREF, $returnedProperties[200]['{DAV:}current-user-principal']->getType());
         $this->assertEquals('principals/admin/', $returnedProperties[200]['{DAV:}current-user-principal']->getHref());
 
     }

@@ -14,12 +14,12 @@ class ExpandPropertiesTest extends \PHPUnit_Framework_TestCase {
         $tree = array(
             new MockPropertyNode('node1', array(
                 '{http://sabredav.org/ns}simple' => 'foo',
-                '{http://sabredav.org/ns}href'   => new DAV\Property\Href('node2'),
+                '{http://sabredav.org/ns}href'   => new DAV\XML\Property\Href('node2'),
                 '{DAV:}displayname'     => 'Node 1',
             )),
             new MockPropertyNode('node2', array(
                 '{http://sabredav.org/ns}simple' => 'simple',
-                '{http://sabredav.org/ns}hreflist' => new DAV\Property\HrefList(array('node1','node3')),
+                '{http://sabredav.org/ns}hreflist' => new DAV\XML\Property\Href(array('node1','node3')),
                 '{DAV:}displayname'     => 'Node 2',
             )),
             new MockPropertyNode('node3', array(

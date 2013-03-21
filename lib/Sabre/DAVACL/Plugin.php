@@ -689,13 +689,14 @@ class Plugin extends DAV\ServerPlugin {
 
             // Properties
             '{DAV:}acl'              => 'Sabre\\DAVACL\\XML\\Property\\Acl',
+            '{DAV:}principal'        => 'Sabre\\DAVACL\\XML\\Property\\Principal',
             '{DAV:}group-member-set' => 'Sabre\\DAV\\XML\\Property\\Href',
 
             // Other elements
             '{DAV:}property-search' => 'Sabre\\XML\\Element\\KeyValue',
             '{DAV:}ace'             => 'Sabre\\XML\\Element\\KeyValue',
             '{DAV:}grant'           => 'Sabre\\DAVACL\\XML\\Element\\Grant',
-            '{DAV:}principal'       => 'Sabre\\DAVACL\\XML\\Element\\Principal',
+
         ];
 
         foreach($elements as $k=>$v) {
@@ -892,9 +893,9 @@ class Plugin extends DAV\ServerPlugin {
 
             unset($requestedProperties[$index]);
             if ($url = $this->getCurrentUserPrincipal()) {
-                $returnedProperties[200]['{DAV:}current-user-principal'] = new Property\Principal(Property\Principal::HREF, $url . '/');
+                $returnedProperties[200]['{DAV:}current-user-principal'] = new XML\Property\Principal(XML\Property\Principal::TYPE_HREF, $url . '/');
             } else {
-                $returnedProperties[200]['{DAV:}current-user-principal'] = new Property\Principal(Property\Principal::UNAUTHENTICATED);
+                $returnedProperties[200]['{DAV:}current-user-principal'] = new XML\Property\Principal(XML\Property\Principal::TYPE_UNAUTHENTICATED);
             }
 
         }
@@ -1153,23 +1154,9 @@ class Plugin extends DAV\ServerPlugin {
 
         $result = $this->expandProperties($requestUri,$request->properties,$depth);
 
-        $dom = new \DOMDocument('1.0','utf-8');
-        $dom->formatOutput = true;
-        $multiStatus = $dom->createElement('d:multistatus');
-        $dom->appendChild($multiStatus);
+        $multiStatus = new DAV\XML\Response\MultiStatus($result);
+        $xml = $this->server->xml->write(['{DAV:}multistatus' => $multiStatus]);
 
-        // Adding in default namespaces
-        foreach($this->server->xmlNamespaces as $namespace=>$prefix) {
-
-            $multiStatus->setAttribute('xmlns:' . $prefix,$namespace);
-
-        }
-
-        foreach($result as $response) {
-            $response->serialize($this->server, $multiStatus);
-        }
-
-        $xml = $dom->saveXML();
         $this->server->httpResponse->setHeader('Content-Type','application/xml; charset=utf-8');
         $this->server->httpResponse->sendStatus(207);
         $this->server->httpResponse->sendBody($xml);
@@ -1206,14 +1193,20 @@ class Plugin extends DAV\ServerPlugin {
                     $hrefs = $node[200][$propertyName]->getHrefs();
                 }
 
-                $childProps = array();
+                $responses = [];
                 foreach($hrefs as $href) {
-                    $childProps = array_merge($childProps, $this->expandProperties($href, $childRequestedProperties, 0));
+                    $subProps = $this->expandProperties($href, $childRequestedProperties, 0);
+                    foreach($subProps as $subProp) {
+                        $responses[] = [
+                            'name'  => '{DAV:}response',
+                            'value' => $subProp
+                            ];
+                    }
                 }
-                $node[200][$propertyName] = new DAV\Property\ResponseList($childProps);
+                $node[200][$propertyName] = $responses;
 
             }
-            $result[] = new DAV\Property\Response($node['href'], $node);
+            $result[] = new DAV\XML\Element\Response($node['href'], $node);
 
         }
 
