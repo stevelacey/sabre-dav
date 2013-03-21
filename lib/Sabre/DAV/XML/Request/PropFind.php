@@ -4,6 +4,7 @@ namespace Sabre\DAV\XML\Request;
 
 use
     Sabre\XML\Element,
+    Sabre\XML\Element\Elements,
     Sabre\XML\Reader,
     Sabre\XML\Writer,
     Sabre\DAV\Exception\CannotSerialize;
@@ -81,17 +82,31 @@ class PropFind implements Element {
 
         $self = new self();
 
-        $subTree = $reader->parseInnerTree();
+        $reader->read();
 
-        foreach($subTree as $elem) {
-            if ($elem['name']==='{DAV:}allprop') {
-                $self->allProp = true;
-            }
-            if ($elem['name']==='{DAV:}prop') {
-                $self->properties = array_keys($elem['value']);
-            }
-        }
+        do {
 
+            if ($reader->nodeType === Reader::ELEMENT) {
+
+                $clark = $reader->getClark();
+                switch($reader->getClark()) {
+
+                    case '{DAV:}allprop' :
+                        $self->allProp = true;
+                        break;
+                    case '{DAV:}prop' :
+                        $self->properties = Elements::deserializeXml($reader);
+                        break;
+                }
+                $reader->next();
+
+            } else {
+                $reader->read();
+            }
+
+        } while ($reader->nodeType !== Reader::END_ELEMENT);
+
+        $reader->read();
         return $self;
 
     }
