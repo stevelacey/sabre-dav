@@ -171,18 +171,6 @@ class Plugin extends DAV\ServerPlugin {
      */
     protected function sendSyncCollectionResponse($syncToken, $collectionUrl, array $added, array $modified, array $deleted, array $properties) {
 
-        $dom = new \DOMDocument('1.0','utf-8');
-        $dom->formatOutput = true;
-        $multiStatus = $dom->createElement('d:multistatus');
-        $dom->appendChild($multiStatus);
-
-        // Adding in default namespaces
-        foreach($this->server->xmlNamespaces as $namespace=>$prefix) {
-
-            $multiStatus->setAttribute('xmlns:' . $prefix,$namespace);
-
-        }
-
         $fullPaths = [];
 
         // Pre-fetching children, if this is possible.
@@ -191,12 +179,12 @@ class Plugin extends DAV\ServerPlugin {
             $fullPaths[] = $fullPath;
         }
 
+        $responses = [];
         foreach($this->server->getPropertiesForMultiplePaths($fullPaths, $properties) as $fullPath => $props) {
 
             // The 'Property_Response' class is responsible for generating a
             // single {DAV:}response xml element.
-            $response = new DAV\Property\Response($fullPath, $props);
-            $response->serialize($this->server, $multiStatus);
+            $responses[] = new DAV\XML\Element\Response($fullPath, $props);
 
         }
 
@@ -205,17 +193,18 @@ class Plugin extends DAV\ServerPlugin {
         foreach($deleted as $item) {
 
             $fullPath = $collectionUrl . '/' . $item;
-            $response = new DAV\Property\Response($fullPath, array(), 404);
-            $response->serialize($this->server, $multiStatus);
+            $responses[] = new DAV\XML\Element\Response($fullPath, array(), 404);
 
         }
 
-        $syncToken = $dom->createElement('d:sync-token', self::SYNCTOKEN_PREFIX . $syncToken);
-        $multiStatus->appendChild($syncToken);
+
+        $writer = $this->server->xml->getWriter();
+        $multiStatus = new DAV\XML\Response\MultiStatus($responses, self::SYNCTOKEN_PREFIX . $syncToken);
+        $writer->write(['{DAV:}multistatus' => $multiStatus]);
 
         $this->server->httpResponse->sendStatus(207);
         $this->server->httpResponse->setHeader('Content-Type','application/xml; charset=utf-8');
-        $this->server->httpResponse->sendBody($dom->saveXML());
+        $this->server->httpResponse->sendBody($writer->outputMemory());
 
     }
 

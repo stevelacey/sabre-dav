@@ -128,7 +128,7 @@ class Response implements Element {
         foreach($this->getResponseProperties() as $status => $properties) {
 
             // Skipping empty lists
-            if (!$properties) {
+            if (!$properties || (!ctype_digit($status) && !is_int($status))) {
                 continue;
             }
             $writer->startElement('{DAV:}propstat');
