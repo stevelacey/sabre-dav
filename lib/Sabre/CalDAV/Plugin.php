@@ -5,7 +5,8 @@ namespace Sabre\CalDAV;
 use
     Sabre\DAV,
     Sabre\DAVACL,
-    Sabre\VObject;
+    Sabre\VObject,
+    Sabre\XML\Writer;
 
 /**
  * CalDAV plugin
@@ -175,8 +176,8 @@ class Plugin extends DAV\ServerPlugin {
         $server->subscribeEvent('beforeCreateFile', array($this, 'beforeCreateFile'));
         $server->subscribeEvent('beforeMethod', array($this,'beforeMethod'));
 
-        $server->xmlNamespaces[self::NS_CALDAV] = 'cal';
-        $server->xmlNamespaces[self::NS_CALENDARSERVER] = 'cs';
+        $server->xml->namespaceMap[self::NS_CALDAV] = 'cal';
+        $server->xml->namespaceMap[self::NS_CALENDARSERVER] = 'cs';
 
         $server->propertyMap['{' . self::NS_CALDAV . '}supported-calendar-component-set'] = 'Sabre\\CalDAV\\Property\\SupportedCalendarComponentSet';
         $server->propertyMap['{' . self::NS_CALDAV . '}schedule-calendar-transp'] = 'Sabre\\CalDAV\\Property\\ScheduleCalendarTransp';
@@ -364,7 +365,7 @@ class Plugin extends DAV\ServerPlugin {
                 $calendarHomePath = self::CALENDAR_ROOT . '/' . $principalId . '/';
 
                 unset($requestedProperties[array_search($calHome, $requestedProperties)]);
-                $returnedProperties[200][$calHome] = new DAV\Property\Href($calendarHomePath);
+                $returnedProperties[200][$calHome] = new DAV\XML\Property\Href($calendarHomePath);
 
             }
 
@@ -375,7 +376,7 @@ class Plugin extends DAV\ServerPlugin {
                 $outboxPath = self::CALENDAR_ROOT . '/' . $principalId . '/outbox';
 
                 unset($requestedProperties[array_search($scheduleProp, $requestedProperties)]);
-                $returnedProperties[200][$scheduleProp] = new DAV\Property\Href($outboxPath);
+                $returnedProperties[200][$scheduleProp] = new DAV\XML\Property\Href($outboxPath);
 
             }
 
@@ -386,7 +387,7 @@ class Plugin extends DAV\ServerPlugin {
                 $addresses = $node->getAlternateUriSet();
                 $addresses[] = $this->server->getBaseUri() . $node->getPrincipalUrl() . '/';
                 unset($requestedProperties[array_search($calProp, $requestedProperties)]);
-                $returnedProperties[200][$calProp] = new DAV\Property\HrefList($addresses, false);
+                $returnedProperties[200][$calProp] = new DAV\XML\Property\Href($addresses, false);
 
             }
 
@@ -418,11 +419,11 @@ class Plugin extends DAV\ServerPlugin {
                 }
                 if (in_array($propRead,$requestedProperties)) {
                     unset($requestedProperties[$propRead]);
-                    $returnedProperties[200][$propRead] = new DAV\Property\HrefList($readList);
+                    $returnedProperties[200][$propRead] = new DAV\XML\Property\Href($readList);
                 }
                 if (in_array($propWrite,$requestedProperties)) {
                     unset($requestedProperties[$propWrite]);
-                    $returnedProperties[200][$propWrite] = new DAV\Property\HrefList($writeList);
+                    $returnedProperties[200][$propWrite] = new DAV\XML\Property\Href($writeList);
                 }
 
             }
@@ -433,7 +434,7 @@ class Plugin extends DAV\ServerPlugin {
                 $principalId = $node->getName();
                 $calendarHomePath = 'calendars/' . $principalId . '/notifications/';
                 unset($requestedProperties[$index]);
-                $returnedProperties[200][$notificationUrl] = new DAV\Property\Href($calendarHomePath);
+                $returnedProperties[200][$notificationUrl] = new DAV\XML\Property\Href($calendarHomePath);
             }
 
         } // instanceof IPrincipal
@@ -765,22 +766,21 @@ class Plugin extends DAV\ServerPlugin {
             return;
 
         if (!$this->server->checkPreconditions(true)) return false;
-        $dom = new \DOMDocument('1.0', 'UTF-8');
 
-        $dom->formatOutput = true;
-
-        $root = $dom->createElement('cs:notification');
-        foreach($this->server->xmlNamespaces as $namespace => $prefix) {
-            $root->setAttribute('xmlns:' . $prefix, $namespace);
-        }
-
-        $dom->appendChild($root);
-        $node->getNotificationType()->serializeBody($this->server, $root);
+        $writer = new Writer();
+        $writer->namespaceMap = $this->server->xml->namespaceMap;
+        $writer->openMemory();
+        $writer->setIndent(true);
+        $writer->setIndentString('  ');
+        $writer->startDocument('1.0','UTF-8');
+        $writer->startElement('{' . self::NS_CALENDARSERVER . '}notification');
+        $node->getNotificationType()->serializeFullXml($writer);
+        $writer->endElement();
 
         $this->server->httpResponse->setHeader('Content-Type','application/xml');
         $this->server->httpResponse->setHeader('ETag',$node->getETag());
         $this->server->httpResponse->sendStatus(200);
-        $this->server->httpResponse->sendBody($dom->saveXML());
+        $this->server->httpResponse->sendBody($writer->outputMemory());
 
         return false;
 
@@ -1019,9 +1019,10 @@ class Plugin extends DAV\ServerPlugin {
      * This method must return an array with status codes per recipient.
      * This should look something like:
      *
-     * array(
-     *    'user1@example.org' => '2.0;Success'
-     * )
+     * [
+     *    'href' => user1@example.org',
+     *    'request-status' => '2.0;Success'
+     * ]
      *
      * Formatting for this status code can be found at:
      * https://tools.ietf.org/html/rfc5545#section-3.8.8.3
@@ -1046,7 +1047,10 @@ class Plugin extends DAV\ServerPlugin {
 
         $result = array();
         foreach($recipients as $recipient) {
-            $result[$recipient] = $resultStatus;
+            $result[] = [
+                'href' => $recipient,
+                'request-status' => $resultStatus,
+            ];
         }
 
         return $result;
@@ -1065,33 +1069,25 @@ class Plugin extends DAV\ServerPlugin {
      */
     public function generateScheduleResponse(array $recipients) {
 
-        $dom = new \DOMDocument('1.0','utf-8');
-        $dom->formatOutput = true;
-        $xscheduleResponse = $dom->createElement('cal:schedule-response');
-        $dom->appendChild($xscheduleResponse);
+        $writer = $this->server->xml->getWriter();
+        $writer->startElement('{' . self::NS_CALDAV . '}schedule-response');
 
-        foreach($this->server->xmlNamespaces as $namespace=>$prefix) {
+        foreach($recipients as $result) {
 
-            $xscheduleResponse->setAttribute('xmlns:' . $prefix, $namespace);
+            $writer->startElement('{' . self::NS_CALDAV . '}response');
 
-        }
+            $writer->startElement('{' . self::NS_CALDAV . '}recipient');
+            $writer->writeElement('{DAV:}href', $result['href']);
+            $writer->endElement(); // recipient
 
-        foreach($recipients as $recipient=>$status) {
-            $xresponse = $dom->createElement('cal:response');
-
-            $xrecipient = $dom->createElement('cal:recipient');
-            $xrecipient->appendChild($dom->createTextNode($recipient));
-            $xresponse->appendChild($xrecipient);
-
-            $xrequestStatus = $dom->createElement('cal:request-status');
-            $xrequestStatus->appendChild($dom->createTextNode($status));
-            $xresponse->appendChild($xrequestStatus);
-
-            $xscheduleResponse->appendChild($xresponse);
+            $writer->writeElement('{' . self::NS_CALDAV . '}request-status', $result['request-status']);
+            if (isset($result['calendar-data'])) {
+                $writer->writeElement('{' . self::NS_CALDAV . '}calendar-data', str_replace("\r\n","\n",$result['calendar-data']->serialize()));
+            }
+            $writer->endElement(); // response
 
         }
-
-        return $dom->saveXML();
+        return $writer->outputMemory();
 
     }
 
@@ -1144,43 +1140,11 @@ class Plugin extends DAV\ServerPlugin {
             $results[] = $this->getFreeBusyForEmail($attendee, $startRange, $endRange, $vObject);
         }
 
-        $dom = new \DOMDocument('1.0','utf-8');
-        $dom->formatOutput = true;
-        $scheduleResponse = $dom->createElement('cal:schedule-response');
-        foreach($this->server->xmlNamespaces as $namespace=>$prefix) {
-
-            $scheduleResponse->setAttribute('xmlns:' . $prefix,$namespace);
-
-        }
-        $dom->appendChild($scheduleResponse);
-
-        foreach($results as $result) {
-            $response = $dom->createElement('cal:response');
-
-            $recipient = $dom->createElement('cal:recipient');
-            $recipientHref = $dom->createElement('d:href');
-
-            $recipientHref->appendChild($dom->createTextNode($result['href']));
-            $recipient->appendChild($recipientHref);
-            $response->appendChild($recipient);
-
-            $reqStatus = $dom->createElement('cal:request-status');
-            $reqStatus->appendChild($dom->createTextNode($result['request-status']));
-            $response->appendChild($reqStatus);
-
-            if (isset($result['calendar-data'])) {
-
-                $calendardata = $dom->createElement('cal:calendar-data');
-                $calendardata->appendChild($dom->createTextNode(str_replace("\r\n","\n",$result['calendar-data']->serialize())));
-                $response->appendChild($calendardata);
-
-            }
-            $scheduleResponse->appendChild($response);
-        }
+        $response = $this->generateScheduleResponse($results);
 
         $this->server->httpResponse->sendStatus(200);
         $this->server->httpResponse->setHeader('Content-Type','application/xml');
-        $this->server->httpResponse->sendBody($dom->saveXML());
+        $this->server->httpResponse->sendBody($response);
 
     }
 
@@ -1230,7 +1194,7 @@ class Plugin extends DAV\ServerPlugin {
                 'href' => 'mailto:' . $email,
             );
         }
-        $homeSet = $result[0][200][$caldavNS . 'calendar-home-set']->getHref();
+        $homeSet = $result[0][200][$caldavNS . 'calendar-home-set']->getHrefs()[0];
 
         // Grabbing the calendar list
         $objects = array();

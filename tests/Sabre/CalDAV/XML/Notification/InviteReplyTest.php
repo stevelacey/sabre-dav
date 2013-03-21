@@ -1,6 +1,6 @@
 <?php
 
-namespace Sabre\CalDAV\Notifications\Notification;
+namespace Sabre\CalDAV\XML\Notification;
 
 use Sabre\CalDAV;
 use Sabre\DAV;
@@ -17,23 +17,28 @@ class InviteReplyTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals('foo', $notification->getId());
         $this->assertEquals('"1"', $notification->getETag());
 
-        $simpleExpected = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<cs:root xmlns:cs="http://calendarserver.org/ns/"><cs:invite-reply/></cs:root>' . "\n";
+        $simpleExpected = <<<XML
+<?xml version="1.0"?>
+<d:root xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:cs="http://calendarserver.org/ns/">
+  <cs:invite-reply/>
+</d:root>
 
-        $dom = new \DOMDocument('1.0','UTF-8');
-        $elem = $dom->createElement('cs:root');
-        $elem->setAttribute('xmlns:cs',CalDAV\Plugin::NS_CALENDARSERVER);
-        $dom->appendChild($elem);
-        $notification->serialize(new DAV\Server(), $elem);
-        $this->assertEquals($simpleExpected, $dom->saveXML());
+XML;
 
-        $dom = new \DOMDocument('1.0','UTF-8');
-        $dom->formatOutput = true;
-        $elem = $dom->createElement('cs:root');
-        $elem->setAttribute('xmlns:cs',CalDAV\Plugin::NS_CALENDARSERVER);
-        $elem->setAttribute('xmlns:d','DAV:');
-        $dom->appendChild($elem);
-        $notification->serializeBody(new DAV\Server(), $elem);
-        $this->assertEquals($expected, $dom->saveXML());
+        $xmlUtil = new DAV\XMLUtil();
+        $xmlUtil->namespaceMap[CalDAV\Plugin::NS_CALENDARSERVER] = 'cs';
+
+        $output = $xmlUtil->write([
+            '{DAV:}root' => $notification,
+        ]);
+        $this->assertEquals($simpleExpected, $output);
+
+        $writer = $xmlUtil->getWriter();
+        $writer->startElement('{DAV:}root');
+        $notification->serializeFullXml($writer);
+        $writer->endElement();
+
+        $this->assertEquals($expected, $writer->outputMemory());
 
 
     }
@@ -53,8 +58,8 @@ class InviteReplyTest extends \PHPUnit_Framework_TestCase {
                     'hostUrl' => 'calendar'
                 ),
 <<<FOO
-<?xml version="1.0" encoding="UTF-8"?>
-<cs:root xmlns:cs="http://calendarserver.org/ns/" xmlns:d="DAV:">
+<?xml version="1.0"?>
+<d:root xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:cs="http://calendarserver.org/ns/">
   <cs:dtstamp>20120101T000000Z</cs:dtstamp>
   <cs:invite-reply>
     <cs:uid>foo</cs:uid>
@@ -65,7 +70,7 @@ class InviteReplyTest extends \PHPUnit_Framework_TestCase {
       <d:href>/calendar</d:href>
     </cs:hosturl>
   </cs:invite-reply>
-</cs:root>
+</d:root>
 
 FOO
             ),
@@ -81,8 +86,8 @@ FOO
                     'summary' => 'Summary!'
                 ),
 <<<FOO
-<?xml version="1.0" encoding="UTF-8"?>
-<cs:root xmlns:cs="http://calendarserver.org/ns/" xmlns:d="DAV:">
+<?xml version="1.0"?>
+<d:root xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:cs="http://calendarserver.org/ns/">
   <cs:dtstamp>20120101T000000Z</cs:dtstamp>
   <cs:invite-reply>
     <cs:uid>foo</cs:uid>
@@ -94,7 +99,7 @@ FOO
     </cs:hosturl>
     <cs:summary>Summary!</cs:summary>
   </cs:invite-reply>
-</cs:root>
+</d:root>
 
 FOO
             ),

@@ -78,19 +78,6 @@ class Server {
     public $transactionType;
 
     /**
-     * This is a default list of namespaces.
-     *
-     * If you are defining your own custom namespace, add it here to reduce
-     * bandwidth and improve legibility of xml bodies.
-     *
-     * @var array
-     */
-    public $xmlNamespaces = [
-        'DAV:' => 'd',
-        'http://sabredav.org/ns' => 's',
-    ];
-
-    /**
      * The propertymap can be used to map properties from
      * requests to property classes.
      *

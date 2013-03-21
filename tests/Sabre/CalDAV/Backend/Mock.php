@@ -70,7 +70,7 @@ class Mock extends AbstractBackend implements NotificationSupport, SharingSuppor
             'id' => $id,
             'principaluri' => $principalUri,
             'uri' => $calendarUri,
-            '{' . CalDAV\Plugin::NS_CALDAV . '}supported-calendar-component-set' => new CalDAV\Property\SupportedCalendarComponentSet(array('VEVENT','VTODO')),
+            '{' . CalDAV\Plugin::NS_CALDAV . '}supported-calendar-component-set' => new CalDAV\XML\Property\SupportedCalendarComponentSet(array('VEVENT','VTODO')),
         ), $properties);
 
         return $id;
@@ -253,7 +253,7 @@ class Mock extends AbstractBackend implements NotificationSupport, SharingSuppor
      * Returns a list of notifications for a given principal url.
      *
      * The returned array should only consist of implementations of
-     * Sabre\CalDAV\Notifications\INotificationType.
+     * Sabre\CalDAV\XML\Notification\NotificationInterface
      *
      * @param string $principalUri
      * @return array
@@ -273,10 +273,10 @@ class Mock extends AbstractBackend implements NotificationSupport, SharingSuppor
      * This may be called by a client once it deems a notification handled.
      *
      * @param string $principalUri
-     * @param Sabre\CalDAV\Notifications\INotificationType $notification
+     * @param Sabre\CalDAV\XML\Notification\NotificationInterface $notification
      * @return void
      */
-    public function deleteNotification($principalUri, CalDAV\Notifications\INotificationType $notification) {
+    public function deleteNotification($principalUri, CalDAV\XML\Notification\NotificationInterface $notification) {
 
         foreach($this->notifications[$principalUri] as $key=>$value) {
             if ($notification === $value) {

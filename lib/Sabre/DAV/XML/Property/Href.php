@@ -1,56 +1,70 @@
 <?php
 
-namespace Sabre\CalDAV\XML\Property;
+namespace Sabre\DAV\XML\Property;
 
 use
     Sabre\XML\Element,
     Sabre\XML\Reader,
-    Sabre\XML\Writer,
-    Sabre\CalDAV\Plugin;
+    Sabre\XML\Writer;
 
 /**
- * SupportedCalendarComponentSet property.
+ * Href property
  *
- * This class represents the
- * {urn:ietf:params:xml:ns:caldav}supported-calendar-component-set property, as
- * defined in:
+ * This class represents any WebDAV property that contains a {DAV:}href
+ * element, and there are many.
  *
- * https://tools.ietf.org/html/rfc4791#section-5.2.3
+ * It can support either 1 or more hrefs.
  *
  * @copyright Copyright (C) 2007-2013 Rooftop Solutions. All rights reserved.
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
-class SupportedCalendarComponentSet implements Element {
+class Href implements Element {
 
     /**
-     * List of supported components.
-     *
-     * This array will contain values such as VEVENT, VTODO and VJOURNAL.
+     * List of uris
      *
      * @var array
      */
-    protected $components = [];
+    protected $hrefs;
 
     /**
-     * Creates the property.
+     * Automatically prefix the url with the server base directory
      *
-     * @param array $components
+     * @var bool
      */
-    public function __construct(array $components) {
+    protected $autoPrefix = true;
 
-        $this->components = $components;
+    /**
+     * Constructor
+     *
+     * You must either pass a string for a single href, or an array of hrefs.
+     *
+     * If auto-prefix is set to false, the hrefs will be treated as absolute
+     * and not relative to the servers base uri.
+     *
+     * @param string|string[] $href
+     * @param bool $autoPrefix
+     */
+    public function __construct($hrefs, $autoPrefix = true) {
+
+        if (is_string($hrefs)) {
+            $hrefs = [$hrefs];
+        }
+        $this->hrefs = $hrefs;
+        $this->autoPrefix = $autoPrefix;
+
 
     }
 
     /**
-     * Returns the list of supported components
+     * Returns the hrefs as an array
      *
      * @return array
      */
-    public function getValue() {
+    public function getHrefs() {
 
-        return $this->components;
+        return $this->hrefs;
 
     }
 
@@ -71,13 +85,12 @@ class SupportedCalendarComponentSet implements Element {
      */
     public function serializeXml(Writer $writer) {
 
-       foreach($this->components as $component) {
-
-            $writer->startElement('{' . Plugin::NS_CALDAV . '}comp');
-            $writer->writeAttributes(['name' => $component]);
-            $writer->endElement();
-
-       }
+        foreach($this->getHrefs() as $href) {
+            if ($this->autoPrefix) {
+                $href = $writer->baseUri . $href;
+            }
+            $writer->writeElement('{DAV:}href', $href);
+        }
 
     }
 
@@ -104,17 +117,15 @@ class SupportedCalendarComponentSet implements Element {
      */
     static public function deserializeXml(Reader $reader) {
 
-        $elems = $reader->parseInnerTree();
+        $hrefs = [];
+        foreach($reader->parseInnerTree() as $elem) {
+            if ($elem['name'] !== '{DAV:}href')
+                continue;
 
-        $components = [];
+            $hrefs[] = $elem['value'];
 
-        foreach($elems as $elem) {
-            if ($elem['name'] === '{'.Plugin::NS_CALDAV . '}comp') {
-                $components[] = $elem['attributes']['name'];
-            }
         }
-
-        return new self($components);
+        return new self($hrefs);
 
     }
 

@@ -6,51 +6,59 @@ use
     Sabre\XML\Element,
     Sabre\XML\Reader,
     Sabre\XML\Writer,
+    Sabre\XML\Element\Elements,
     Sabre\CalDAV\Plugin;
 
 /**
- * SupportedCalendarComponentSet property.
+ * schedule-calendar-transp property.
  *
- * This class represents the
- * {urn:ietf:params:xml:ns:caldav}supported-calendar-component-set property, as
- * defined in:
+ * This property is a representation of the schedule-calendar-transp property.
+ * This property is defined in:
  *
- * https://tools.ietf.org/html/rfc4791#section-5.2.3
+ * http://tools.ietf.org/html/rfc6638#section-9.1
+ *
+ * Its values are either 'transparent' or 'opaque'. If it's transparent, it
+ * means that this calendar will not be taken into consideration when a
+ * different user queries for free-busy information. If it's 'opaque', it will.
  *
  * @copyright Copyright (C) 2007-2013 Rooftop Solutions. All rights reserved.
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
-class SupportedCalendarComponentSet implements Element {
+class ScheduleCalendarTransp implements Element {
+
+    const TRANSPARENT = 'transparent';
+    const OPAQUE = 'opaque';
 
     /**
-     * List of supported components.
+     * value
      *
-     * This array will contain values such as VEVENT, VTODO and VJOURNAL.
-     *
-     * @var array
+     * @var string
      */
-    protected $components = [];
+    protected $value;
 
     /**
-     * Creates the property.
+     * Creates the property
      *
-     * @param array $components
+     * @param string $value
      */
-    public function __construct(array $components) {
+    public function __construct($value) {
 
-        $this->components = $components;
+        if ($value !== self::TRANSPARENT && $value !== self::OPAQUE) {
+            throw new \InvalidArgumentException('The value must either be specified as "transparent" or "opaque"');
+        }
+        $this->value = $value;
 
     }
 
     /**
-     * Returns the list of supported components
+     * Returns the current value
      *
-     * @return array
+     * @return string
      */
     public function getValue() {
 
-        return $this->components;
+        return $this->value;
 
     }
 
@@ -71,13 +79,14 @@ class SupportedCalendarComponentSet implements Element {
      */
     public function serializeXml(Writer $writer) {
 
-       foreach($this->components as $component) {
-
-            $writer->startElement('{' . Plugin::NS_CALDAV . '}comp');
-            $writer->writeAttributes(['name' => $component]);
-            $writer->endElement();
-
-       }
+        switch($this->value) {
+            case self::TRANSPARENT :
+                $writer->writeElement('{'.Plugin::NS_CALDAV.'}transparent');
+                break;
+            case self::OPAQUE :
+                $writer->writeElement('{'.Plugin::NS_CALDAV.'}opaque');
+                break;
+        }
 
     }
 
@@ -104,17 +113,24 @@ class SupportedCalendarComponentSet implements Element {
      */
     static public function deserializeXml(Reader $reader) {
 
-        $elems = $reader->parseInnerTree();
+        $elems = Elements::deserializeXml($reader);
 
-        $components = [];
+        $value = null;
 
         foreach($elems as $elem) {
-            if ($elem['name'] === '{'.Plugin::NS_CALDAV . '}comp') {
-                $components[] = $elem['attributes']['name'];
+            switch($elem) {
+                case '{' . Plugin::NS_CALDAV . '}opaque' :
+                    $value = self::OPAQUE;
+                    break;
+                case '{' . Plugin::NS_CALDAV . '}transparent' :
+                    $value = self::TRANSPARENT;
+                    break;
             }
         }
+        if (is_null($value))
+           return null;
 
-        return new self($components);
+        return new self($value);
 
     }
 

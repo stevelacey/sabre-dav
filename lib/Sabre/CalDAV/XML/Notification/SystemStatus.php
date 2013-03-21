@@ -1,9 +1,13 @@
 <?php
 
-namespace Sabre\CalDAV\Notifications\Notification;
+namespace Sabre\CalDAV\XML\Notification;
 
-use Sabre\DAV;
-use Sabre\CalDAV;
+use
+    Sabre\XML\Reader,
+    Sabre\XML\Writer,
+    Sabre\CalDAV\Plugin,
+    Sabre\DAV\Exception\CannotSerialize;
+
 
 /**
  * SystemStatus notification
@@ -15,7 +19,7 @@ use Sabre\CalDAV;
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
-class SystemStatus extends DAV\Property implements CalDAV\Notifications\INotificationType {
+class SystemStatus implements NotificationInterface {
 
     const TYPE_LOW = 1;
     const TYPE_MEDIUM = 2;
@@ -79,16 +83,21 @@ class SystemStatus extends DAV\Property implements CalDAV\Notifications\INotific
     }
 
     /**
-     * Serializes the notification as a single property.
+     * The serialize method is called during xml writing.
      *
-     * You should usually just encode the single top-level element of the
-     * notification.
+     * It should use the $writer argument to encode this object into XML.
      *
-     * @param DAV\Server $server
-     * @param \DOMElement $node
+     * Important note: it is not needed to create the parent element. The
+     * parent element is already created, and we only have to worry about
+     * attributes, child elements and text (if any).
+     *
+     * Important note 2: If you are writing any new elements, you are also
+     * responsible for closing them.
+     *
+     * @param Writer $writer
      * @return void
      */
-    public function serialize(DAV\Server $server, \DOMElement $node) {
+    public function serializeXml(Writer $writer) {
 
         switch($this->type) {
             case self::TYPE_LOW :
@@ -103,10 +112,9 @@ class SystemStatus extends DAV\Property implements CalDAV\Notifications\INotific
                 break;
         }
 
-        $prop = $node->ownerDocument->createElement('cs:systemstatus');
-        $prop->setAttribute('type', $type);
-
-        $node->appendChild($prop);
+        $writer->startElement('{' . Plugin::NS_CALENDARSERVER .'}systemstatus');
+        $writer->writeAttribute('type', $type);
+        $writer->endElement();
 
     }
 
@@ -114,12 +122,12 @@ class SystemStatus extends DAV\Property implements CalDAV\Notifications\INotific
      * This method serializes the entire notification, as it is used in the
      * response body.
      *
-     * @param DAV\Server $server
-     * @param \DOMElement $node
+     * @param Writer $writer
      * @return void
      */
-    public function serializeBody(DAV\Server $server, \DOMElement $node) {
+    public function serializeFullXml(Writer $writer) {
 
+        $cs = '{' . Plugin::NS_CALENDARSERVER .'}';
         switch($this->type) {
             case self::TYPE_LOW :
                 $type = 'low';
@@ -133,23 +141,18 @@ class SystemStatus extends DAV\Property implements CalDAV\Notifications\INotific
                 break;
         }
 
-        $prop = $node->ownerDocument->createElement('cs:systemstatus');
-        $prop->setAttribute('type', $type);
+        $writer->startElement($cs .'systemstatus');
+        $writer->writeAttribute('type', $type);
+
 
         if ($this->description) {
-            $text = $node->ownerDocument->createTextNode($this->description);
-            $desc = $node->ownerDocument->createElement('cs:description');
-            $desc->appendChild($text);
-            $prop->appendChild($desc);
+            $writer->writeElement($cs . 'description', $this->description);
         }
         if ($this->href) {
-            $text = $node->ownerDocument->createTextNode($this->href);
-            $href = $node->ownerDocument->createElement('d:href');
-            $href->appendChild($text);
-            $prop->appendChild($href);
+            $writer->writeElement('{DAV:}href', $this->href);
         }
 
-        $node->appendChild($prop);
+        $writer->endElement(); // systemstatus
 
     }
 
@@ -177,6 +180,33 @@ class SystemStatus extends DAV\Property implements CalDAV\Notifications\INotific
     public function getETag() {
 
         return $this->etag;
+
+    }
+
+    /**
+     * The deserialize method is called during xml parsing.
+     *
+     * This method is called statictly, this is because in theory this method
+     * may be used as a type of constructor, or factory method.
+     *
+     * Often you want to return an instance of the current class, but you are
+     * free to return other data as well.
+     *
+     * Important note 2: You are responsible for advancing the reader to the
+     * next element. Not doing anything will result in a never-ending loop.
+     *
+     * If you just want to skip parsing for this element altogether, you can
+     * just call $reader->next();
+     *
+     * $reader->parseInnerTree() will parse the entire sub-tree, and advance to
+     * the next element.
+     *
+     * @param Reader $reader
+     * @return mixed
+     */
+    static public function deserializeXml(Reader $reader) {
+
+        throw new CannotDeserialize('This element does not have a deserializer');
 
     }
 }

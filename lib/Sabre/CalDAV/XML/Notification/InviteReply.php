@@ -1,10 +1,14 @@
 <?php
 
-namespace Sabre\CalDAV\Notifications\Notification;
+namespace Sabre\CalDAV\XML\Notification;
 
-use Sabre\CalDAV\SharingPlugin as SharingPlugin;
-use Sabre\DAV;
-use Sabre\CalDAV;
+use
+    Sabre\XML\Element,
+    Sabre\XML\Reader,
+    Sabre\XML\Writer,
+    Sabre\DAV,
+    Sabre\CalDAV,
+    Sabre\CalDAV\SharingPlugin;
 
 /**
  * This class represents the cs:invite-reply notification element.
@@ -13,7 +17,7 @@ use Sabre\CalDAV;
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
-class InviteReply extends DAV\Property implements CalDAV\Notifications\INotificationType {
+class InviteReply implements NotificationInterface {
 
     /**
      * A unique id for the message
@@ -114,19 +118,23 @@ class InviteReply extends DAV\Property implements CalDAV\Notifications\INotifica
     }
 
     /**
-     * Serializes the notification as a single property.
+     * The serialize method is called during xml writing.
      *
-     * You should usually just encode the single top-level element of the
-     * notification.
+     * It should use the $writer argument to encode this object into XML.
      *
-     * @param DAV\Server $server
-     * @param \DOMElement $node
+     * Important note: it is not needed to create the parent element. The
+     * parent element is already created, and we only have to worry about
+     * attributes, child elements and text (if any).
+     *
+     * Important note 2: If you are writing any new elements, you are also
+     * responsible for closing them.
+     *
+     * @param Writer $writer
      * @return void
      */
-    public function serialize(DAV\Server $server, \DOMElement $node) {
+    public function serializeXml(Writer $writer) {
 
-        $prop = $node->ownerDocument->createElement('cs:invite-reply');
-        $node->appendChild($prop);
+        $writer->writeElement('{' . CalDAV\Plugin::NS_CALENDARSERVER .'}invite-reply');
 
     }
 
@@ -134,58 +142,41 @@ class InviteReply extends DAV\Property implements CalDAV\Notifications\INotifica
      * This method serializes the entire notification, as it is used in the
      * response body.
      *
-     * @param DAV\Server $server
-     * @param \DOMElement $node
+     * @param Writer $writer
      * @return void
      */
-    public function serializeBody(DAV\Server $server, \DOMElement $node) {
+    public function serializeFullXml(Writer $writer) {
 
-        $doc = $node->ownerDocument;
+        $cs = '{' . CalDAV\Plugin::NS_CALENDARSERVER . '}';
 
-        $dt = $doc->createElement('cs:dtstamp');
         $this->dtStamp->setTimezone(new \DateTimezone('GMT'));
-        $dt->appendChild($doc->createTextNode($this->dtStamp->format('Ymd\\THis\\Z')));
-        $node->appendChild($dt);
+        $writer->writeElement($cs . 'dtstamp', $this->dtStamp->format('Ymd\\THis\\Z'));
 
-        $prop = $doc->createElement('cs:invite-reply');
-        $node->appendChild($prop);
+        $writer->startElement($cs . 'invite-reply');
 
-        $uid = $doc->createElement('cs:uid');
-        $uid->appendChild($doc->createTextNode($this->id));
-        $prop->appendChild($uid);
+        $writer->writeElement($cs . 'uid', $this->id);
+        $writer->writeElement($cs . 'in-reply-to', $this->inReplyTo);
+        $writer->writeElement('{DAV:}href', $this->href);
 
-        $inReplyTo = $doc->createElement('cs:in-reply-to');
-        $inReplyTo->appendChild( $doc->createTextNode($this->inReplyTo) );
-        $prop->appendChild($inReplyTo);
-
-        $href = $doc->createElement('d:href');
-        $href->appendChild( $doc->createTextNode($this->href) );
-        $prop->appendChild($href);
-
-        $nodeName = null;
         switch($this->type) {
 
             case SharingPlugin::STATUS_ACCEPTED :
-                $nodeName = 'cs:invite-accepted';
+                $writer->writeElement($cs . 'invite-accepted');
                 break;
             case SharingPlugin::STATUS_DECLINED :
-                $nodeName = 'cs:invite-declined';
+                $writer->writeElement($cs . 'invite-declined');
                 break;
 
         }
-        $prop->appendChild(
-            $doc->createElement($nodeName)
-        );
-        $hostHref = $doc->createElement('d:href', $server->getBaseUri() . $this->hostUrl);
-        $hostUrl  = $doc->createElement('cs:hosturl');
-        $hostUrl->appendChild($hostHref);
-        $prop->appendChild($hostUrl);
+
+        $writer->writeElement($cs . 'hosturl', [
+            '{DAV:}href' => $writer->baseUri . $this->hostUrl
+            ]);
 
         if ($this->summary) {
-            $summary = $doc->createElement('cs:summary');
-            $summary->appendChild($doc->createTextNode($this->summary));
-            $prop->appendChild($summary);
+            $writer->writeElement($cs . 'summary', $this->summary);
         }
+        $writer->endElement(); // invite-reply
 
     }
 
@@ -215,4 +206,32 @@ class InviteReply extends DAV\Property implements CalDAV\Notifications\INotifica
         return $this->etag;
 
     }
+
+    /**
+     * The deserialize method is called during xml parsing.
+     *
+     * This method is called statictly, this is because in theory this method
+     * may be used as a type of constructor, or factory method.
+     *
+     * Often you want to return an instance of the current class, but you are
+     * free to return other data as well.
+     *
+     * Important note 2: You are responsible for advancing the reader to the
+     * next element. Not doing anything will result in a never-ending loop.
+     *
+     * If you just want to skip parsing for this element altogether, you can
+     * just call $reader->next();
+     *
+     * $reader->parseInnerTree() will parse the entire sub-tree, and advance to
+     * the next element.
+     *
+     * @param Reader $reader
+     * @return mixed
+     */
+    static public function deserializeXml(Reader $reader) {
+
+        throw new CannotDeserialize('This element does not have a deserializer');
+
+    }
+
 }

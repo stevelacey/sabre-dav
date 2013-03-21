@@ -1,6 +1,6 @@
 <?php
 
-namespace Sabre\CalDAV\Property;
+namespace Sabre\CalDAV\XML\Property;
 
 use Sabre\CalDAV;
 use Sabre\DAV;
@@ -50,23 +50,14 @@ class InviteTest extends \PHPUnit_Framework_TestCase {
             'lastName' => 'Doctor',
         ));
 
-        $doc = new \DOMDocument();
-        $doc->formatOutput = true;
-        $root = $doc->createElement('d:root');
-        $root->setAttribute('xmlns:d','DAV:');
-        $root->setAttribute('xmlns:cal',CalDAV\Plugin::NS_CALDAV);
-        $root->setAttribute('xmlns:cs',CalDAV\Plugin::NS_CALENDARSERVER);
-
-        $doc->appendChild($root);
-        $server = new DAV\Server();
-
-        $property->serialize($server, $root);
-
-        $xml = $doc->saveXML();
+        $xmlUtil = new DAV\XMLUtil();
+        $xmlUtil->namespaceMap[CalDAV\Plugin::NS_CALDAV] = 'cal';
+        $xmlUtil->namespaceMap[CalDAV\Plugin::NS_CALENDARSERVER] = 'cs';
+        $xml = $xmlUtil->write(['{DAV:}root' => $property]);
 
         $this->assertEquals(
 '<?xml version="1.0"?>
-<d:root xmlns:d="DAV:" xmlns:cal="' . CalDAV\Plugin::NS_CALDAV . '" xmlns:cs="' . CalDAV\Plugin::NS_CALENDARSERVER . '">
+<d:root xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:cal="' . CalDAV\Plugin::NS_CALDAV . '" xmlns:cs="' . CalDAV\Plugin::NS_CALENDARSERVER . '">
   <cs:organizer>
     <d:href>mailto:thedoctor@example.org</d:href>
     <cs:common-name>The Doctor</cs:common-name>
@@ -147,33 +138,20 @@ class InviteTest extends \PHPUnit_Framework_TestCase {
         );
 
         // Creating the xml
-        $doc = new \DOMDocument();
-        $doc->formatOutput = true;
-        $root = $doc->createElement('d:root');
-        $root->setAttribute('xmlns:d','DAV:');
-        $root->setAttribute('xmlns:cal',CalDAV\Plugin::NS_CALDAV);
-        $root->setAttribute('xmlns:cs',CalDAV\Plugin::NS_CALENDARSERVER);
-
-        $doc->appendChild($root);
-        $server = new DAV\Server();
-
-        $inputProperty = new Invite($input);
-        $inputProperty->serialize($server, $root);
-
-        $xml = $doc->saveXML();
+        $xmlUtil = new DAV\XMLUtil();
+        $xmlUtil->namespaceMap[CalDAV\Plugin::NS_CALDAV] = 'cal';
+        $xmlUtil->namespaceMap[CalDAV\Plugin::NS_CALENDARSERVER] = 'cs';
+        $xml = $xmlUtil->write(['{DAV:}root' => new Invite($input)]);
 
         // Parsing it again
-
-        $doc2 = DAV\XMLUtil::loadDOMDocument($xml);
-
-        $outputProperty = Invite::unserialize($doc2->firstChild, array());
-
+        $xmlUtil->elementMap['{DAV:}root'] = 'Sabre\\CalDAV\\XML\\Property\\Invite';
+        $outputProperty = $xmlUtil->parse($xml);
         $this->assertEquals($input, $outputProperty->getValue());
 
     }
 
     /**
-     * @expectedException Sabre\DAV\Exception
+     * @expectedException \InvalidArgumentException
      */
     function testUnserializeNoStatus() {
 
@@ -188,8 +166,9 @@ $xml = '<?xml version="1.0"?>
   </cs:user>
 </d:root>';
 
-        $doc2 = DAV\XMLUtil::loadDOMDocument($xml);
-        $outputProperty = Invite::unserialize($doc2->firstChild, array());
+        $xmlUtil = new DAV\XMLUtil();
+        $xmlUtil->elementMap['{DAV:}root'] = 'Sabre\\CalDAV\\XML\\Property\\Invite';
+        $xmlUtil->parse($xml);
 
     }
 

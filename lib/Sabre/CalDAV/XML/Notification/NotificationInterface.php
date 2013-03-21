@@ -1,7 +1,10 @@
 <?php
 
-namespace Sabre\CalDAV\Notifications;
-use Sabre\DAV;
+namespace Sabre\CalDAV\XML\Notification;
+
+use
+    Sabre\XML\Element,
+    Sabre\XML\Writer;
 
 /**
  * This interface reflects a single notification type.
@@ -10,17 +13,16 @@ use Sabre\DAV;
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
-interface INotificationType extends DAV\PropertyInterface {
+interface NotificationInterface extends Element {
 
     /**
      * This method serializes the entire notification, as it is used in the
      * response body.
      *
-     * @param DAV\Server $server
-     * @param \DOMElement $node
+     * @param Writer $writer
      * @return void
      */
-    function serializeBody(DAV\Server $server, \DOMElement $node);
+    function serializeFullXml(Writer $writer);
 
     /**
      * Returns a unique id for this notification

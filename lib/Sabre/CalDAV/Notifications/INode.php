@@ -20,7 +20,7 @@ interface INode {
 
     /**
      * This method must return an xml element, using the
-     * Sabre\CalDAV\Notifications\INotificationType classes.
+     * Sabre\CalDAV\XML\Notification\NotificationInterface classes.
      *
      * @return INotificationType
      */

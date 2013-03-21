@@ -1,19 +1,26 @@
 <?php
 
-namespace Sabre\CalDAV\Notifications\Notification;
+namespace Sabre\CalDAV\XML\Notification;
 
-use Sabre\CalDAV\SharingPlugin as SharingPlugin;
-use Sabre\DAV;
-use Sabre\CalDAV;
+use
+    Sabre\XML\Element,
+    Sabre\XML\Reader,
+    Sabre\XML\Writer,
+    Sabre\CalDAV\SharingPlugin as SharingPlugin,
+    Sabre\DAV,
+    Sabre\CalDAV;
 
 /**
  * This class represents the cs:invite-notification notification element.
+ *
+ * This element is defined here:
+ * http://svn.calendarserver.org/repository/calendarserver/CalendarServer/trunk/doc/Extensions/caldav-sharing.txt
  *
  * @copyright Copyright (C) 2007-2013 Rooftop Solutions. All rights reserved.
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
-class Invite extends DAV\Property implements CalDAV\Notifications\INotificationType {
+class Invite implements NotificationInterface {
 
     /**
      * A unique id for the message
@@ -162,19 +169,23 @@ class Invite extends DAV\Property implements CalDAV\Notifications\INotificationT
     }
 
     /**
-     * Serializes the notification as a single property.
+     * The serialize method is called during xml writing.
      *
-     * You should usually just encode the single top-level element of the
-     * notification.
+     * It should use the $writer argument to encode this object into XML.
      *
-     * @param DAV\Server $server
-     * @param \DOMElement $node
+     * Important note: it is not needed to create the parent element. The
+     * parent element is already created, and we only have to worry about
+     * attributes, child elements and text (if any).
+     *
+     * Important note 2: If you are writing any new elements, you are also
+     * responsible for closing them.
+     *
+     * @param Writer $writer
      * @return void
      */
-    public function serialize(DAV\Server $server, \DOMElement $node) {
+    public function serializeXml(Writer $writer) {
 
-        $prop = $node->ownerDocument->createElement('cs:invite-notification');
-        $node->appendChild($prop);
+        $writer->writeElement('{' . CalDAV\Plugin::NS_CALENDARSERVER .'}invite-notification');
 
     }
 
@@ -182,115 +193,87 @@ class Invite extends DAV\Property implements CalDAV\Notifications\INotificationT
      * This method serializes the entire notification, as it is used in the
      * response body.
      *
-     * @param DAV\Server $server
-     * @param \DOMElement $node
+     * @param Writer $writer
      * @return void
      */
-    public function serializeBody(DAV\Server $server, \DOMElement $node) {
+    public function serializeFullXml(Writer $writer) {
 
-        $doc = $node->ownerDocument;
+        $cs = '{' . CalDAV\Plugin::NS_CALENDARSERVER . '}';
 
-        $dt = $doc->createElement('cs:dtstamp');
         $this->dtStamp->setTimezone(new \DateTimezone('GMT'));
-        $dt->appendChild($doc->createTextNode($this->dtStamp->format('Ymd\\THis\\Z')));
-        $node->appendChild($dt);
+        $writer->writeElement($cs . 'dtstamp', $this->dtStamp->format('Ymd\\THis\\Z'));
 
-        $prop = $doc->createElement('cs:invite-notification');
-        $node->appendChild($prop);
+        $writer->startElement($cs . 'invite-notification');
 
-        $uid = $doc->createElement('cs:uid');
-        $uid->appendChild( $doc->createTextNode($this->id) );
-        $prop->appendChild($uid);
+        $writer->writeElement($cs . 'uid', $this->id);
+        $writer->writeElement('{DAV:}href', $this->href);
 
-        $href = $doc->createElement('d:href');
-        $href->appendChild( $doc->createTextNode( $this->href ) );
-        $prop->appendChild($href);
-
-        $nodeName = null;
         switch($this->type) {
 
             case SharingPlugin::STATUS_ACCEPTED :
-                $nodeName = 'cs:invite-accepted';
+                $writer->writeElement($cs . 'invite-accepted');
                 break;
             case SharingPlugin::STATUS_DECLINED :
-                $nodeName = 'cs:invite-declined';
+                $writer->writeElement($cs . 'invite-declined');
                 break;
             case SharingPlugin::STATUS_DELETED :
-                $nodeName = 'cs:invite-deleted';
+                $writer->writeElement($cs . 'invite-deleted');
                 break;
             case SharingPlugin::STATUS_NORESPONSE :
-                $nodeName = 'cs:invite-noresponse';
+                $writer->writeElement($cs . 'invite-noresponse');
                 break;
 
         }
-        $prop->appendChild(
-            $doc->createElement($nodeName)
-        );
-        $hostHref = $doc->createElement('d:href', $server->getBaseUri() . $this->hostUrl);
-        $hostUrl  = $doc->createElement('cs:hosturl');
-        $hostUrl->appendChild($hostHref);
-        $prop->appendChild($hostUrl);
 
-        $access = $doc->createElement('cs:access');
-        if ($this->readOnly) {
-            $access->appendChild($doc->createElement('cs:read'));
-        } else {
-            $access->appendChild($doc->createElement('cs:read-write'));
+        $writer->writeElement($cs . 'hosturl', [
+            '{DAV:}href' => $writer->baseUri . $this->hostUrl
+            ]);
+
+        if ($this->summary) {
+            $writer->writeElement($cs . 'summary', $this->summary);
         }
-        $prop->appendChild($access);
 
-        $organizerUrl  = $doc->createElement('cs:organizer');
+        $writer->startElement($cs . 'access');
+        if ($this->readOnly) {
+            $writer->writeElement($cs . 'read');
+        } else {
+            $writer->writeElement($cs . 'read-write');
+        }
+        $writer->endElement(); // access
+
+        $writer->startElement($cs . 'organizer');
         // If the organizer contains a 'mailto:' part, it means it should be
         // treated as absolute.
         if (strtolower(substr($this->organizer,0,7))==='mailto:') {
-            $organizerHref = new DAV\Property\Href($this->organizer, false);
+            $writer->writeElement('{DAV:}href',$this->organizer);
         } else {
-            $organizerHref = new DAV\Property\Href($this->organizer, true);
+            $writer->writeElement('{DAV:}href',$writer->baseUri . $this->organizer);
         }
-        $organizerHref->serialize($server, $organizerUrl);
-
         if ($this->commonName) {
-            $commonName = $doc->createElement('cs:common-name');
-            $commonName->appendChild($doc->createTextNode($this->commonName));
-            $organizerUrl->appendChild($commonName);
-
-            $commonNameOld = $doc->createElement('cs:organizer-cn');
-            $commonNameOld->appendChild($doc->createTextNode($this->commonName));
-            $prop->appendChild($commonNameOld);
-
+            $writer->writeElement($cs . 'common-name', $this->commonName);
         }
         if ($this->firstName) {
-            $firstName = $doc->createElement('cs:first-name');
-            $firstName->appendChild($doc->createTextNode($this->firstName));
-            $organizerUrl->appendChild($firstName);
-
-            $firstNameOld = $doc->createElement('cs:organizer-first');
-            $firstNameOld->appendChild($doc->createTextNode($this->firstName));
-            $prop->appendChild($firstNameOld);
+            $writer->writeElement($cs . 'first-name', $this->firstName);
         }
         if ($this->lastName) {
-            $lastName = $doc->createElement('cs:last-name');
-            $lastName->appendChild($doc->createTextNode($this->lastName));
-            $organizerUrl->appendChild($lastName);
-
-            $lastNameOld = $doc->createElement('cs:organizer-last');
-            $lastNameOld->appendChild($doc->createTextNode($this->lastName));
-            $prop->appendChild($lastNameOld);
+            $writer->writeElement($cs . 'last-name', $this->lastName);
         }
-        $prop->appendChild($organizerUrl);
+        $writer->endElement(); // organizer
 
-        if ($this->summary) {
-            $summary = $doc->createElement('cs:summary');
-            $summary->appendChild($doc->createTextNode($this->summary));
-            $prop->appendChild($summary);
+        if ($this->commonName) {
+            $writer->writeElement($cs . 'organizer-cn', $this->commonName);
+        }
+        if ($this->firstName) {
+            $writer->writeElement($cs . 'organizer-first', $this->firstName);
+        }
+        if ($this->lastName) {
+            $writer->writeElement($cs . 'organizer-last', $this->lastName);
         }
         if ($this->supportedComponents) {
-
-            $xcomp = $doc->createElement('cal:supported-calendar-component-set');
-            $this->supportedComponents->serialize($server, $xcomp);
-            $prop->appendChild($xcomp);
-
+            $writer->writeElement('{' . CalDAV\Plugin::NS_CALDAV . '}supported-calendar-component-set', $this->supportedComponents);
         }
+
+        $writer->endElement(); // invite-notification
 
     }
 
@@ -318,6 +301,33 @@ class Invite extends DAV\Property implements CalDAV\Notifications\INotificationT
     public function getETag() {
 
         return $this->etag;
+
+    }
+
+    /**
+     * The deserialize method is called during xml parsing.
+     *
+     * This method is called statictly, this is because in theory this method
+     * may be used as a type of constructor, or factory method.
+     *
+     * Often you want to return an instance of the current class, but you are
+     * free to return other data as well.
+     *
+     * Important note 2: You are responsible for advancing the reader to the
+     * next element. Not doing anything will result in a never-ending loop.
+     *
+     * If you just want to skip parsing for this element altogether, you can
+     * just call $reader->next();
+     *
+     * $reader->parseInnerTree() will parse the entire sub-tree, and advance to
+     * the next element.
+     *
+     * @param Reader $reader
+     * @return mixed
+     */
+    static public function deserializeXml(Reader $reader) {
+
+        throw new CannotDeserialize('This element does not have a deserializer');
 
     }
 

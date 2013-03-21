@@ -6,53 +6,23 @@ use
     Sabre\XML\Element,
     Sabre\XML\Reader,
     Sabre\XML\Writer,
+    Sabre\DAV\Exception\CannotDeserialize,
     Sabre\CalDAV\Plugin;
 
 /**
- * SupportedCalendarComponentSet property.
+ * supported-collation-set property
  *
- * This class represents the
- * {urn:ietf:params:xml:ns:caldav}supported-calendar-component-set property, as
- * defined in:
+ * This property is a representation of the supported-collation-set property
+ * in the CalDAV namespace.
  *
- * https://tools.ietf.org/html/rfc4791#section-5.2.3
+ * This property is defined in:
+ * http://tools.ietf.org/html/rfc4791#section-7.5.1
  *
  * @copyright Copyright (C) 2007-2013 Rooftop Solutions. All rights reserved.
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
-class SupportedCalendarComponentSet implements Element {
-
-    /**
-     * List of supported components.
-     *
-     * This array will contain values such as VEVENT, VTODO and VJOURNAL.
-     *
-     * @var array
-     */
-    protected $components = [];
-
-    /**
-     * Creates the property.
-     *
-     * @param array $components
-     */
-    public function __construct(array $components) {
-
-        $this->components = $components;
-
-    }
-
-    /**
-     * Returns the list of supported components
-     *
-     * @return array
-     */
-    public function getValue() {
-
-        return $this->components;
-
-    }
+class SupportedCollationSet implements Element {
 
     /**
      * The serialize method is called during xml writing.
@@ -71,13 +41,15 @@ class SupportedCalendarComponentSet implements Element {
      */
     public function serializeXml(Writer $writer) {
 
-       foreach($this->components as $component) {
+        $collations = [
+            'i;ascii-casemap',
+            'i;octet',
+            'i;unicode-casemap'
+        ];
 
-            $writer->startElement('{' . Plugin::NS_CALDAV . '}comp');
-            $writer->writeAttributes(['name' => $component]);
-            $writer->endElement();
-
-       }
+        foreach($collations as $collation) {
+            $writer->writeElement('{' . Plugin::NS_CALDAV . '}supported-collation', $collation);
+        }
 
     }
 
@@ -104,17 +76,7 @@ class SupportedCalendarComponentSet implements Element {
      */
     static public function deserializeXml(Reader $reader) {
 
-        $elems = $reader->parseInnerTree();
-
-        $components = [];
-
-        foreach($elems as $elem) {
-            if ($elem['name'] === '{'.Plugin::NS_CALDAV . '}comp') {
-                $components[] = $elem['attributes']['name'];
-            }
-        }
-
-        return new self($components);
+        throw new CannotDeserialize('This element does not have a deserializer');
 
     }
 

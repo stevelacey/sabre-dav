@@ -49,7 +49,7 @@ class XMLUtil {
      *
      * @var string
      */
-    public $baseUri;
+    public $baseUri = '/';
 
     /**
      * Returns the 'clark notation' for an element.
@@ -158,12 +158,11 @@ class XMLUtil {
     }
 
     /**
-     * Shortcut for easily writing an entire document.
+     * Returns a fully initialized xml writer
      *
-     * Value is passed to Sabre\XML\Writer::write().
-     * @return string
+     * @return Writer
      */
-    public function write(array $value) {
+    public function getWriter() {
 
         $writer = new Writer();
         $writer->baseUri = $this->baseUri;
@@ -172,6 +171,19 @@ class XMLUtil {
         $writer->setIndent(true);
         $writer->setIndentString('  ');
         $writer->startDocument('1.0');
+        return $writer;
+
+    }
+
+    /**
+     * Shortcut for easily writing an entire document.
+     *
+     * Value is passed to Sabre\XML\Writer::write().
+     * @return string
+     */
+    public function write(array $value) {
+
+        $writer = $this->getWriter();
         $writer->write($value);
         return $writer->outputMemory();
 

@@ -6,51 +6,52 @@ use
     Sabre\XML\Element,
     Sabre\XML\Reader,
     Sabre\XML\Writer,
+    Sabre\DAV\Exception\CannotDeserialize,
     Sabre\CalDAV\Plugin;
 
 /**
- * SupportedCalendarComponentSet property.
+ * AllowedSharingModes
  *
- * This class represents the
- * {urn:ietf:params:xml:ns:caldav}supported-calendar-component-set property, as
- * defined in:
+ * This property encodes the 'allowed-sharing-modes' property, as defined by
+ * the 'caldav-sharing-02' spec, in the http://calendarserver.org/ns/
+ * namespace.
  *
- * https://tools.ietf.org/html/rfc4791#section-5.2.3
+ * This property is a representation of the supported-calendar_component-set
+ * property in the CalDAV namespace. It simply requires an array of components,
+ * such as VEVENT, VTODO
  *
+ * @see https://trac.calendarserver.org/browser/CalendarServer/trunk/doc/Extensions/caldav-sharing-02.txt
  * @copyright Copyright (C) 2007-2013 Rooftop Solutions. All rights reserved.
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
-class SupportedCalendarComponentSet implements Element {
+class AllowedSharingModes implements Element {
 
     /**
-     * List of supported components.
+     * Whether or not a calendar can be shared with another user
      *
-     * This array will contain values such as VEVENT, VTODO and VJOURNAL.
-     *
-     * @var array
+     * @var bool
      */
-    protected $components = [];
+    protected $canBeShared;
 
     /**
-     * Creates the property.
+     * Whether or not the calendar can be placed on a public url.
      *
-     * @param array $components
+     * @var bool
      */
-    public function __construct(array $components) {
-
-        $this->components = $components;
-
-    }
+    protected $canBePublished;
 
     /**
-     * Returns the list of supported components
+     * Constructor
      *
-     * @return array
+     * @param bool $canBeShared
+     * @param bool $canBePublished
+     * @return void
      */
-    public function getValue() {
+    public function __construct($canBeShared, $canBePublished) {
 
-        return $this->components;
+        $this->canBeShared = $canBeShared;
+        $this->canBePublished = $canBePublished;
 
     }
 
@@ -71,13 +72,12 @@ class SupportedCalendarComponentSet implements Element {
      */
     public function serializeXml(Writer $writer) {
 
-       foreach($this->components as $component) {
-
-            $writer->startElement('{' . Plugin::NS_CALDAV . '}comp');
-            $writer->writeAttributes(['name' => $component]);
-            $writer->endElement();
-
-       }
+        if ($this->canBeShared) {
+            $writer->writeElement('{' . Plugin::NS_CALENDARSERVER . '}can-be-shared');
+        }
+        if ($this->canBePublished) {
+            $writer->writeElement('{' . Plugin::NS_CALENDARSERVER . '}can-be-published');
+        }
 
     }
 
@@ -104,18 +104,7 @@ class SupportedCalendarComponentSet implements Element {
      */
     static public function deserializeXml(Reader $reader) {
 
-        $elems = $reader->parseInnerTree();
-
-        $components = [];
-
-        foreach($elems as $elem) {
-            if ($elem['name'] === '{'.Plugin::NS_CALDAV . '}comp') {
-                $components[] = $elem['attributes']['name'];
-            }
-        }
-
-        return new self($components);
+        throw new CannotDeserialize('This element does not have a deserializer');
 
     }
-
 }

@@ -680,10 +680,6 @@ class Plugin extends DAV\ServerPlugin {
         // {DAV:}principal resourcetype.
         $server->resourceTypeMapping['Sabre\\DAVACL\\IPrincipal'] = '{DAV:}principal';
 
-        // Mapping the group-member-set property to the HrefList property
-        // class.
-        $server->propertyMap['{DAV:}group-member-set'] = 'Sabre\\DAV\\Property\\HrefList';
-
         $elements = [
 
             // Requests
@@ -692,7 +688,8 @@ class Plugin extends DAV\ServerPlugin {
             '{DAV:}expand-property'               => 'Sabre\\DAVACL\\XML\\Request\\ExpandPropertyReport',
 
             // Properties
-            '{DAV:}acl' => 'Sabre\\DAVACL\\XML\\Property\\Acl',
+            '{DAV:}acl'              => 'Sabre\\DAVACL\\XML\\Property\\Acl',
+            '{DAV:}group-member-set' => 'Sabre\\DAV\\XML\\Property\\Href',
 
             // Other elements
             '{DAV:}property-search' => 'Sabre\\XML\\Element\\KeyValue',
@@ -853,25 +850,25 @@ class Plugin extends DAV\ServerPlugin {
             if (false !== ($index = array_search('{DAV:}alternate-URI-set', $requestedProperties))) {
 
                 unset($requestedProperties[$index]);
-                $returnedProperties[200]['{DAV:}alternate-URI-set'] = new DAV\Property\HrefList($node->getAlternateUriSet());
+                $returnedProperties[200]['{DAV:}alternate-URI-set'] = new DAV\XML\Property\Href($node->getAlternateUriSet());
 
             }
             if (false !== ($index = array_search('{DAV:}principal-URL', $requestedProperties))) {
 
                 unset($requestedProperties[$index]);
-                $returnedProperties[200]['{DAV:}principal-URL'] = new DAV\Property\Href($node->getPrincipalUrl() . '/');
+                $returnedProperties[200]['{DAV:}principal-URL'] = new DAV\XML\Property\Href($node->getPrincipalUrl() . '/');
 
             }
             if (false !== ($index = array_search('{DAV:}group-member-set', $requestedProperties))) {
 
                 unset($requestedProperties[$index]);
-                $returnedProperties[200]['{DAV:}group-member-set'] = new DAV\Property\HrefList($node->getGroupMemberSet());
+                $returnedProperties[200]['{DAV:}group-member-set'] = new DAV\XML\Property\Href($node->getGroupMemberSet());
 
             }
             if (false !== ($index = array_search('{DAV:}group-membership', $requestedProperties))) {
 
                 unset($requestedProperties[$index]);
-                $returnedProperties[200]['{DAV:}group-membership'] = new DAV\Property\HrefList($node->getGroupMembership());
+                $returnedProperties[200]['{DAV:}group-membership'] = new DAV\XML\Property\Href($node->getGroupMembership());
 
             }
 
@@ -888,7 +885,7 @@ class Plugin extends DAV\ServerPlugin {
             $val = $this->principalCollectionSet;
             // Ensuring all collections end with a slash
             foreach($val as $k=>$v) $val[$k] = $v . '/';
-            $returnedProperties[200]['{DAV:}principal-collection-set'] = new DAV\Property\HrefList($val);
+            $returnedProperties[200]['{DAV:}principal-collection-set'] = new DAV\XML\Property\Href($val);
 
         }
         if (false !== ($index = array_search('{DAV:}current-user-principal', $requestedProperties))) {
@@ -956,7 +953,7 @@ class Plugin extends DAV\ServerPlugin {
             if (false !== ($index = array_search('{DAV:}owner', $requestedProperties))) {
 
                 unset($requestedProperties[$index]);
-                $returnedProperties[200]['{DAV:}owner'] = new DAV\Property\Href($node->getOwner() . '/');
+                $returnedProperties[200]['{DAV:}owner'] = new DAV\XML\Property\Href($node->getOwner() . '/');
 
             }
 
@@ -980,13 +977,13 @@ class Plugin extends DAV\ServerPlugin {
 
         if (is_null($propertyDelta['{DAV:}group-member-set'])) {
             $memberSet = array();
-        } elseif ($propertyDelta['{DAV:}group-member-set'] instanceof DAV\Property\HrefList) {
+        } elseif ($propertyDelta['{DAV:}group-member-set'] instanceof DAV\XML\Property\Href) {
             $memberSet = array_map(
                 array($this->server,'calculateUri'),
                 $propertyDelta['{DAV:}group-member-set']->getHrefs()
             );
         } else {
-            throw new DAV\Exception('The group-member-set property MUST be an instance of Sabre\DAV\Property\HrefList or null');
+            throw new DAV\Exception('The group-member-set property MUST be an instance of Sabre\DAV\XML\Property\Href or null');
         }
 
         if (!($node instanceof IPrincipal)) {
@@ -1205,9 +1202,7 @@ class Plugin extends DAV\ServerPlugin {
                 // and it contains an href element.
                 if (!array_key_exists($propertyName,$node[200])) continue;
 
-                if ($node[200][$propertyName] instanceof DAV\Property\IHref) {
-                    $hrefs = array($node[200][$propertyName]->getHref());
-                } elseif ($node[200][$propertyName] instanceof DAV\Property\HrefList) {
+                if ($node[200][$propertyName] instanceof DAV\XML\Property\Href) {
                     $hrefs = $node[200][$propertyName]->getHrefs();
                 }
 

@@ -35,7 +35,7 @@ class PluginTest extends \PHPUnit_Framework_TestCase {
                 '{urn:ietf:params:xml:ns:caldav}calendar-description' => 'Calendar description',
                 '{http://apple.com/ns/ical/}calendar-order' => '1',
                 '{http://apple.com/ns/ical/}calendar-color' => '#FF0000',
-                '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set' => new Property\SupportedCalendarComponentSet(array('VEVENT','VTODO')),
+                '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set' => new XML\Property\SupportedCalendarComponentSet(array('VEVENT','VTODO')),
             ),
             array(
                 'id' => 2,
@@ -45,7 +45,7 @@ class PluginTest extends \PHPUnit_Framework_TestCase {
                 '{urn:ietf:params:xml:ns:caldav}calendar-description' => 'Calendar description',
                 '{http://apple.com/ns/ical/}calendar-order' => '1',
                 '{http://apple.com/ns/ical/}calendar-color' => '#FF0000',
-                '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set' => new Property\SupportedCalendarComponentSet(array('VEVENT','VTODO')),
+                '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set' => new XML\Property\SupportedCalendarComponentSet(array('VEVENT','VTODO')),
             )
         ), array(
             1 => array(
@@ -98,7 +98,7 @@ class PluginTest extends \PHPUnit_Framework_TestCase {
 
         $this->assertEquals(array('MKCALENDAR'), $this->plugin->getHTTPMethods('calendars/user1/randomnewcalendar'));
         $this->assertEquals(array('calendar-access','calendar-proxy'), $this->plugin->getFeatures());
-        $this->assertArrayHasKey('urn:ietf:params:xml:ns:caldav', $this->server->xmlNamespaces);
+        $this->assertArrayHasKey('urn:ietf:params:xml:ns:caldav', $this->server->xml->namespaceMap);
 
     }
 
@@ -420,7 +420,7 @@ END:VCALENDAR';
 
         }
         $sccs = '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set';
-        $this->assertTrue($newCalendar[$sccs] instanceof Property\SupportedCalendarComponentSet);
+        $this->assertTrue($newCalendar[$sccs] instanceof XML\Property\SupportedCalendarComponentSet);
         $this->assertEquals(array('VEVENT','VTODO'),$newCalendar[$sccs]->getValue());
 
     }
@@ -447,33 +447,34 @@ END:VCALENDAR';
 
         $this->assertArrayHasKey('{urn:ietf:params:xml:ns:caldav}calendar-home-set',$props[0][200]);
         $prop = $props[0][200]['{urn:ietf:params:xml:ns:caldav}calendar-home-set'];
-        $this->assertTrue($prop instanceof DAV\Property\Href);
-        $this->assertEquals('calendars/user1/',$prop->getHref());
+        $this->assertTrue($prop instanceof DAV\XML\Property\Href);
+        $this->assertEquals(['calendars/user1/'],$prop->getHrefs());
 
         $this->assertArrayHasKey('{urn:ietf:params:xml:ns:caldav}schedule-outbox-URL',$props[0][200]);
         $prop = $props[0][200]['{urn:ietf:params:xml:ns:caldav}schedule-outbox-URL'];
-        $this->assertTrue($prop instanceof DAV\Property\Href);
-        $this->assertEquals('calendars/user1/outbox',$prop->getHref());
+        $this->assertTrue($prop instanceof DAV\XML\Property\Href);
+
+        $this->assertEquals(['calendars/user1/outbox'],$prop->getHrefs());
 
         $this->assertArrayHasKey('{'.Plugin::NS_CALENDARSERVER .'}notification-URL',$props[0][200]);
         $prop = $props[0][200]['{'.Plugin::NS_CALENDARSERVER .'}notification-URL'];
-        $this->assertTrue($prop instanceof DAV\Property\Href);
-        $this->assertEquals('calendars/user1/notifications/',$prop->getHref());
+        $this->assertTrue($prop instanceof DAV\XML\Property\Href);
+        $this->assertEquals(['calendars/user1/notifications/'],$prop->getHrefs());
 
 
         $this->assertArrayHasKey('{urn:ietf:params:xml:ns:caldav}calendar-user-address-set',$props[0][200]);
         $prop = $props[0][200]['{urn:ietf:params:xml:ns:caldav}calendar-user-address-set'];
-        $this->assertTrue($prop instanceof DAV\Property\HrefList);
+        $this->assertTrue($prop instanceof DAV\XML\Property\Href);
         $this->assertEquals(array('mailto:user1.sabredav@sabredav.org','/principals/user1/'),$prop->getHrefs());
 
         $this->assertArrayHasKey('{http://calendarserver.org/ns/}calendar-proxy-read-for', $props[0][200]);
         $prop = $props[0][200]['{http://calendarserver.org/ns/}calendar-proxy-read-for'];
-        $this->assertInstanceOf('Sabre\\DAV\\Property\\HrefList', $prop);
+        $this->assertInstanceOf('Sabre\\DAV\\XML\\Property\\Href', $prop);
         $this->assertEquals(array('principals/admin'), $prop->getHrefs());
 
         $this->assertArrayHasKey('{http://calendarserver.org/ns/}calendar-proxy-write-for', $props[0][200]);
         $prop = $props[0][200]['{http://calendarserver.org/ns/}calendar-proxy-write-for'];
-        $this->assertInstanceOf('Sabre\\DAV\\Property\\HrefList', $prop);
+        $this->assertInstanceOf('Sabre\\DAV\\XML\\Property\\Href', $prop);
         $this->assertEquals(array('principals/admin'), $prop->getHrefs());
 
 
@@ -1080,7 +1081,7 @@ END:VCALENDAR';
         $notification = new Notifications\Node(
             $this->caldavBackend,
             'principals/user1',
-            new Notifications\Notification\SystemStatus('foo','"1"')
+            new XML\Notification\SystemStatus('foo','"1"')
         );
         $this->plugin->beforeGetProperties('foo', $notification, $request, $result);
 
@@ -1098,7 +1099,7 @@ END:VCALENDAR';
         $notification = new Notifications\Node(
             $this->caldavBackend,
             'principals/user1',
-            new Notifications\Notification\SystemStatus('foo','"1"')
+            new XML\Notification\SystemStatus('foo','"1"')
         );
 
         $server = new DAV\Server(array($notification));

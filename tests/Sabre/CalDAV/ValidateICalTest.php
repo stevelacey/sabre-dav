@@ -26,13 +26,13 @@ class ValidateICalTest extends \PHPUnit_Framework_TestCase {
                 'id' => 'calendar1',
                 'principaluri' => 'principals/admin',
                 'uri' => 'calendar1',
-                '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set' => new Property\SupportedCalendarComponentSet( array('VEVENT','VTODO','VJOURNAL') ),
+                '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set' => new XML\Property\SupportedCalendarComponentSet( array('VEVENT','VTODO','VJOURNAL') ),
             ),
             array(
                 'id' => 'calendar2',
                 'principaluri' => 'principals/admin',
                 'uri' => 'calendar2',
-                '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set' => new Property\SupportedCalendarComponentSet( array('VTODO','VJOURNAL') ),
+                '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set' => new XML\Property\SupportedCalendarComponentSet( array('VTODO','VJOURNAL') ),
             )
         );
 

@@ -39,9 +39,9 @@ interface NotificationSupport extends BackendInterface {
      * This may be called by a client once it deems a notification handled.
      *
      * @param string $principalUri
-     * @param \Sabre\CalDAV\Notifications\INotificationType $notification
+     * @param \Sabre\CalDAV\XML\Notification\NotificationInterface $notification
      * @return void
      */
-    public function deleteNotification($principalUri, \Sabre\CalDAV\Notifications\INotificationType $notification);
+    public function deleteNotification($principalUri, \Sabre\CalDAV\XML\Notification\NotificationInterface $notification);
 
 }

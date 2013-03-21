@@ -158,7 +158,28 @@ class Principal implements Element {
      */
     public function serializeXml(Writer $writer) {
 
-        throw new CannotSerialize('This element cannot be serialized.');
+        switch($this->type) {
+
+            case self::TYPE_UNAUTHENTICATED :
+                $writer->writeElement('{DAV:}unauthenticated');
+                break;
+            case self::TYPE_AUTHENTICATED :
+                $writer->writeElement('{DAV:}authenticated');
+                break;
+            case self::TYPE_ALL :
+                $writer->writeElement('{DAV:}all');
+                break;
+            case self::TYPE_HREF :
+                $writer->writeElement('{DAV:}href', $writer->baseUri . $this->href);
+                break;
+            case self::TYPE_SELF :
+                $writer->writeElement('{DAV:}self');
+                break;
+            case self::TYPE_PROPERTY :
+                $writer->writeElement('{DAV:}property', [ $this->getProperty() => null ]);
+                break;
+
+        }
 
     }
 

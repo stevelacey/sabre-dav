@@ -45,9 +45,9 @@ class Node extends DAV\File implements INode, DAVACL\IACL {
      *
      * @param CalDAV\Backend\NotificationSupport $caldavBackend
      * @param string $principalUri
-     * @param CalDAV\Notifications\INotificationType $notification
+     * @param CalDAV\XML\Notification\NotificationInterface $notification
      */
-    public function __construct(CalDAV\Backend\NotificationSupport $caldavBackend, $principalUri, INotificationType $notification) {
+    public function __construct(CalDAV\Backend\NotificationSupport $caldavBackend, $principalUri, CalDAV\XML\Notification\NotificationInterface $notification) {
 
         $this->caldavBackend = $caldavBackend;
         $this->principalUri = $principalUri;
@@ -81,7 +81,7 @@ class Node extends DAV\File implements INode, DAVACL\IACL {
 
     /**
      * This method must return an xml element, using the
-     * Sabre\CalDAV\Notifications\INotificationType classes.
+     * Sabre\CalDAV\XML\Notification\NotificationInterface classes.
      *
      * @return INotificationType
      */

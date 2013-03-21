@@ -1,6 +1,6 @@
 <?php
 
-namespace Sabre\CalDAV\Property;
+namespace Sabre\CalDAV\XML\Property;
 
 use Sabre\CalDAV;
 use Sabre\DAV;
@@ -40,23 +40,16 @@ class ScheduleCalendarTranspTest extends \PHPUnit_Framework_TestCase {
 
         $property = new ScheduleCalendarTransp($value);
 
-        $doc = new \DOMDocument();
-        $root = $doc->createElement('d:root');
-        $root->setAttribute('xmlns:d','DAV:');
-        $root->setAttribute('xmlns:cal',CalDAV\Plugin::NS_CALDAV);
-
-        $doc->appendChild($root);
-        $server = new DAV\Server();
-
-        $property->serialize($server, $root);
-
-        $xml = $doc->saveXML();
+        $xmlUtil = new DAV\XMLUtil();
+        $xmlUtil->namespaceMap[CalDAV\Plugin::NS_CALDAV] = 'cal';
+        $xmlUtil->namespaceMap[CalDAV\Plugin::NS_CALENDARSERVER] = 'cs';
+        $xml = $xmlUtil->write(['{DAV:}root' => $property]);
 
         $this->assertEquals(
 '<?xml version="1.0"?>
-<d:root xmlns:d="DAV:" xmlns:cal="' . CalDAV\Plugin::NS_CALDAV . '">' .
-'<cal:' . $value . '/>' .
-'</d:root>
+<d:root xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:cal="urn:ietf:params:xml:ns:caldav" xmlns:cs="http://calendarserver.org/ns/">
+  <cal:' . $value . '/>
+</d:root>
 ', $xml);
 
     }
@@ -68,13 +61,13 @@ class ScheduleCalendarTranspTest extends \PHPUnit_Framework_TestCase {
     function testUnserializer($value) {
 
         $xml = '<?xml version="1.0"?>
-<d:root xmlns:d="DAV:" xmlns:cal="' . CalDAV\Plugin::NS_CALDAV . '">' .
-'<cal:'.$value.'/>' .
-'</d:root>';
+<d:root xmlns:d="DAV:" xmlns:cal="' . CalDAV\Plugin::NS_CALDAV . '">
+  <cal:'.$value.'/>
+</d:root>';
 
-        $dom = DAV\XMLUtil::loadDOMDocument($xml);
-
-        $property = ScheduleCalendarTransp::unserialize($dom->firstChild, array());
+        $xmlUtil = new DAV\XMLUtil();
+        $xmlUtil->elementMap['{DAV:}root'] = 'Sabre\\CalDAV\\XML\\Property\\ScheduleCalendarTransp';
+        $property = $xmlUtil->parse($xml);
 
         $this->assertTrue($property instanceof ScheduleCalendarTransp);
         $this->assertEquals($value, $property->getValue());
@@ -91,9 +84,11 @@ class ScheduleCalendarTranspTest extends \PHPUnit_Framework_TestCase {
 '<cal:foo/>' .
 '</d:root>';
 
-        $dom = DAV\XMLUtil::loadDOMDocument($xml);
+        $xmlUtil = new DAV\XMLUtil();
+        $xmlUtil->elementMap['{DAV:}root'] = 'Sabre\\CalDAV\\XML\\Property\\ScheduleCalendarTransp';
+        $property = $xmlUtil->parse($xml);
 
-        $this->assertNull(ScheduleCalendarTransp::unserialize($dom->firstChild, array()));
+        $this->assertNull($property);
 
     }
 }

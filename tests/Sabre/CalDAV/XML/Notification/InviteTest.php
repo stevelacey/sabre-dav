@@ -1,6 +1,6 @@
 <?php
 
-namespace Sabre\CalDAV\Notifications\Notification;
+namespace Sabre\CalDAV\XML\Notification;
 
 use Sabre\CalDAV;
 use Sabre\DAV;
@@ -17,25 +17,29 @@ class InviteTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals('foo', $notification->getId());
         $this->assertEquals('"1"', $notification->getETag());
 
-        $simpleExpected = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<cs:root xmlns:cs="http://calendarserver.org/ns/"><cs:invite-notification/></cs:root>' . "\n";
+        $simpleExpected = <<<XML
+<?xml version="1.0"?>
+<d:root xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:cs="http://calendarserver.org/ns/" xmlns:cal="urn:ietf:params:xml:ns:caldav">
+  <cs:invite-notification/>
+</d:root>
 
-        $dom = new \DOMDocument('1.0','UTF-8');
-        $elem = $dom->createElement('cs:root');
-        $elem->setAttribute('xmlns:cs',CalDAV\Plugin::NS_CALENDARSERVER);
-        $dom->appendChild($elem);
-        $notification->serialize(new DAV\Server(), $elem);
-        $this->assertEquals($simpleExpected, $dom->saveXML());
+XML;
 
-        $dom = new \DOMDocument('1.0','UTF-8');
-        $dom->formatOutput = true;
-        $elem = $dom->createElement('cs:root');
-        $elem->setAttribute('xmlns:cs',CalDAV\Plugin::NS_CALENDARSERVER);
-        $elem->setAttribute('xmlns:d','DAV:');
-        $elem->setAttribute('xmlns:cal',CalDAV\Plugin::NS_CALDAV);
-        $dom->appendChild($elem);
-        $notification->serializeBody(new DAV\Server(), $elem);
-        $this->assertEquals($expected, $dom->saveXML());
+        $xmlUtil = new DAV\XMLUtil();
+        $xmlUtil->namespaceMap[CalDAV\Plugin::NS_CALENDARSERVER] = 'cs';
+        $xmlUtil->namespaceMap[CalDAV\Plugin::NS_CALDAV] = 'cal';
 
+        $output = $xmlUtil->write([
+            '{DAV:}root' => $notification,
+        ]);
+        $this->assertEquals($simpleExpected, $output);
+
+        $writer = $xmlUtil->getWriter();
+        $writer->startElement('{DAV:}root');
+        $notification->serializeFullXml($writer);
+        $writer->endElement();
+
+        $this->assertEquals($expected, $writer->outputMemory());
 
     }
 
@@ -57,8 +61,8 @@ class InviteTest extends \PHPUnit_Framework_TestCase {
                     'summary' => 'Awesome stuff!'
                 ),
 <<<FOO
-<?xml version="1.0" encoding="UTF-8"?>
-<cs:root xmlns:cs="http://calendarserver.org/ns/" xmlns:d="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav">
+<?xml version="1.0"?>
+<d:root xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:cs="http://calendarserver.org/ns/" xmlns:cal="urn:ietf:params:xml:ns:caldav">
   <cs:dtstamp>20120101T000000Z</cs:dtstamp>
   <cs:invite-notification>
     <cs:uid>foo</cs:uid>
@@ -67,17 +71,17 @@ class InviteTest extends \PHPUnit_Framework_TestCase {
     <cs:hosturl>
       <d:href>/calendar</d:href>
     </cs:hosturl>
+    <cs:summary>Awesome stuff!</cs:summary>
     <cs:access>
       <cs:read/>
     </cs:access>
-    <cs:organizer-cn>John Doe</cs:organizer-cn>
     <cs:organizer>
       <d:href>/principal/user1</d:href>
       <cs:common-name>John Doe</cs:common-name>
     </cs:organizer>
-    <cs:summary>Awesome stuff!</cs:summary>
+    <cs:organizer-cn>John Doe</cs:organizer-cn>
   </cs:invite-notification>
-</cs:root>
+</d:root>
 
 FOO
             ),
@@ -94,8 +98,8 @@ FOO
                     'commonName' => 'John Doe',
                 ),
 <<<FOO
-<?xml version="1.0" encoding="UTF-8"?>
-<cs:root xmlns:cs="http://calendarserver.org/ns/" xmlns:d="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav">
+<?xml version="1.0"?>
+<d:root xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:cs="http://calendarserver.org/ns/" xmlns:cal="urn:ietf:params:xml:ns:caldav">
   <cs:dtstamp>20120101T000000Z</cs:dtstamp>
   <cs:invite-notification>
     <cs:uid>foo</cs:uid>
@@ -107,13 +111,13 @@ FOO
     <cs:access>
       <cs:read/>
     </cs:access>
-    <cs:organizer-cn>John Doe</cs:organizer-cn>
     <cs:organizer>
       <d:href>/principal/user1</d:href>
       <cs:common-name>John Doe</cs:common-name>
     </cs:organizer>
+    <cs:organizer-cn>John Doe</cs:organizer-cn>
   </cs:invite-notification>
-</cs:root>
+</d:root>
 
 FOO
             ),
@@ -131,8 +135,8 @@ FOO
                     'lastName'  => 'Bar',
                 ),
 <<<FOO
-<?xml version="1.0" encoding="UTF-8"?>
-<cs:root xmlns:cs="http://calendarserver.org/ns/" xmlns:d="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav">
+<?xml version="1.0"?>
+<d:root xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:cs="http://calendarserver.org/ns/" xmlns:cal="urn:ietf:params:xml:ns:caldav">
   <cs:dtstamp>20120101T000000Z</cs:dtstamp>
   <cs:invite-notification>
     <cs:uid>foo</cs:uid>
@@ -144,15 +148,15 @@ FOO
     <cs:access>
       <cs:read/>
     </cs:access>
-    <cs:organizer-first>Foo</cs:organizer-first>
-    <cs:organizer-last>Bar</cs:organizer-last>
     <cs:organizer>
       <d:href>/principal/user1</d:href>
       <cs:first-name>Foo</cs:first-name>
       <cs:last-name>Bar</cs:last-name>
     </cs:organizer>
+    <cs:organizer-first>Foo</cs:organizer-first>
+    <cs:organizer-last>Bar</cs:organizer-last>
   </cs:invite-notification>
-</cs:root>
+</d:root>
 
 FOO
             ),
@@ -166,11 +170,11 @@ FOO
                     'readOnly' => false,
                     'hostUrl' => 'calendar',
                     'organizer' => 'mailto:user1@fruux.com',
-                    'supportedComponents' => new CalDAV\Property\SupportedCalendarComponentSet(array('VEVENT','VTODO')),
+                    'supportedComponents' => new CalDAV\XML\Property\SupportedCalendarComponentSet(array('VEVENT','VTODO')),
                 ),
 <<<FOO
-<?xml version="1.0" encoding="UTF-8"?>
-<cs:root xmlns:cs="http://calendarserver.org/ns/" xmlns:d="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav">
+<?xml version="1.0"?>
+<d:root xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:cs="http://calendarserver.org/ns/" xmlns:cal="urn:ietf:params:xml:ns:caldav">
   <cs:dtstamp>20120101T000000Z</cs:dtstamp>
   <cs:invite-notification>
     <cs:uid>foo</cs:uid>
@@ -190,7 +194,7 @@ FOO
       <cal:comp name="VTODO"/>
     </cal:supported-calendar-component-set>
   </cs:invite-notification>
-</cs:root>
+</d:root>
 
 FOO
             ),

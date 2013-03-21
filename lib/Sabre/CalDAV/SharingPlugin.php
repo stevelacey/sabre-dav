@@ -129,7 +129,7 @@ class SharingPlugin extends DAV\ServerPlugin {
 
                 unset($requestedProperties[$index]);
                 $returnedProperties[200]['{' . Plugin::NS_CALENDARSERVER . '}invite'] =
-                    new Property\Invite(
+                    new XML\Property\Invite(
                         $node->getShares()
                     );
 
@@ -143,7 +143,7 @@ class SharingPlugin extends DAV\ServerPlugin {
 
                 unset($requestedProperties[$index]);
                 $returnedProperties[200]['{' . Plugin::NS_CALENDARSERVER . '}shared-url'] =
-                    new DAV\Property\Href(
+                    new DAV\XML\Property\Href(
                         $node->getSharedUrl()
                     );
 
@@ -179,7 +179,7 @@ class SharingPlugin extends DAV\ServerPlugin {
                 }
 
                 $returnedProperties[200]['{' . Plugin::NS_CALENDARSERVER . '}invite'] =
-                    new Property\Invite(
+                    new XML\Property\Invite(
                         $node->getShares(),
                         $ownerInfo
                     );
@@ -214,7 +214,7 @@ class SharingPlugin extends DAV\ServerPlugin {
             $propName = '{' . Plugin::NS_CALENDARSERVER . '}allowed-sharing-modes';
             if (array_key_exists($propName, $properties[404])) {
                 unset($properties[404][$propName]);
-                $properties[200][$propName] = new Property\AllowedSharingModes(true,false);
+                $properties[200][$propName] = new XML\Property\AllowedSharingModes(true,false);
             }
 
         }
@@ -368,20 +368,13 @@ class SharingPlugin extends DAV\ServerPlugin {
                 $this->server->httpResponse->setHeader('X-Sabre-Status', 'everything-went-well');
 
                 if ($url) {
-                    $dom = new \DOMDocument('1.0', 'UTF-8');
-                    $dom->formatOutput = true;
+                    $xml =$this->server->xml->write([
+                        '{ ' . Plugin::NS_CALENDARSERVER . '}shared-as' =>
+                        new DAV\XML\Property\Href($url)
+                    ]);
 
-                    $root = $dom->createElement('cs:shared-as');
-                    foreach($this->server->xmlNamespaces as $namespace => $prefix) {
-                        $root->setAttribute('xmlns:' . $prefix, $namespace);
-                    }
-
-                    $dom->appendChild($root);
-                    $href = new DAV\Property\Href($url);
-
-                    $href->serialize($this->server, $root);
                     $this->server->httpResponse->setHeader('Content-Type','application/xml');
-                    $this->server->httpResponse->sendBody($dom->saveXML());
+                    $this->server->httpResponse->sendBody($xml);
 
                 }
 

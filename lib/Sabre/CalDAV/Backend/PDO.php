@@ -139,8 +139,8 @@ class PDO extends AbstractBackend implements SyncSupport {
                 'principaluri' => $row['principaluri'],
                 '{' . CalDAV\Plugin::NS_CALENDARSERVER . '}getctag' => 'http://sabredav.org/ns/sync/' . ($row['synctoken']?$row['synctoken']:'0'),
                 '{DAV:}sync-token' => $row['synctoken']?$row['synctoken']:'0',
-                '{' . CalDAV\Plugin::NS_CALDAV . '}supported-calendar-component-set' => new CalDAV\Property\SupportedCalendarComponentSet($components),
-                '{' . CalDAV\Plugin::NS_CALDAV . '}schedule-calendar-transp' => new CalDAV\Property\ScheduleCalendarTransp($row['transparent']?'transparent':'opaque'),
+                '{' . CalDAV\Plugin::NS_CALDAV . '}supported-calendar-component-set' => new CalDAV\XML\Property\SupportedCalendarComponentSet($components),
+                '{' . CalDAV\Plugin::NS_CALDAV . '}schedule-calendar-transp' => new CalDAV\XML\Property\ScheduleCalendarTransp($row['transparent']?'transparent':'opaque'),
             ];
 
 
@@ -188,7 +188,7 @@ class PDO extends AbstractBackend implements SyncSupport {
         if (!isset($properties[$sccs])) {
             $values[':components'] = 'VEVENT,VTODO';
         } else {
-            if (!($properties[$sccs] instanceof CalDAV\Property\SupportedCalendarComponentSet)) {
+            if (!($properties[$sccs] instanceof CalDAV\XML\Property\SupportedCalendarComponentSet)) {
                 throw new DAV\Exception('The ' . $sccs . ' property must be of type: \Sabre\CalDAV\Property\SupportedCalendarComponentSet');
             }
             $values[':components'] = implode(',',$properties[$sccs]->getValue());

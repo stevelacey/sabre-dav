@@ -2,7 +2,9 @@
 
 namespace Sabre\CalDAV\Notifications;
 
-use Sabre\CalDAV;
+use
+    Sabre\CalDAV,
+    Sabre\CalDAV\XML\Notification;
 
 class CollectionTest extends \PHPUnit_Framework_TestCase {
 
