@@ -37,7 +37,7 @@ class PluginTest extends AbstractPluginTest {
 
         $this->assertEquals(1, count($result));
         $this->assertTrue(isset($result['{' . Plugin::NS_CARDDAV . '}addressbook-home-set']));
-        $this->assertEquals('addressbooks/user1/', $result['{' . Plugin::NS_CARDDAV . '}addressbook-home-set']->getHref());
+        $this->assertEquals(['addressbooks/user1/'], $result['{' . Plugin::NS_CARDDAV . '}addressbook-home-set']->getHrefs());
 
     }
 
@@ -52,8 +52,8 @@ class PluginTest extends AbstractPluginTest {
 
         $this->assertEquals(
             array(
-                '{http://calendarserver.org/ns/}me-card' =>  
-                    new DAV\Property\Href('addressbooks/user1/book1/vcard1.vcf') 
+                '{http://calendarserver.org/ns/}me-card' =>
+                    new DAV\XML\Property\Href('addressbooks/user1/book1/vcard1.vcf')
             ),
             $result
         );
@@ -112,7 +112,7 @@ class PluginTest extends AbstractPluginTest {
     function testUpdatePropertiesMeCard() {
 
         $result = $this->server->updateProperties('addressbooks/user1', array(
-            '{http://calendarserver.org/ns/}me-card' => new DAV\Property\Href('/addressbooks/user1/book1/vcard2',true),
+            '{http://calendarserver.org/ns/}me-card' => new DAV\XML\Property\Href('/addressbooks/user1/book1/vcard2',true),
         ));
 
         $this->assertEquals(
@@ -129,17 +129,17 @@ class PluginTest extends AbstractPluginTest {
 
     function testUpdatePropertiesMeCardBadValue() {
 
-        $result = $this->server->updateProperties('addressbooks/user1', array(
-            '{http://calendarserver.org/ns/}me-card' => new DAV\Property\HrefList(array()),
-        ));
+        $result = $this->server->updateProperties('addressbooks/user1', [
+            '{http://calendarserver.org/ns/}me-card' => [],
+        ]);
 
         $this->assertEquals(
-            array(
+            [
                 'href' => 'addressbooks/user1',
-                400 => array(
+                400 => [
                     '{http://calendarserver.org/ns/}me-card' => null,
-                ),
-            ),
+                ],
+            ],
             $result
         );
 

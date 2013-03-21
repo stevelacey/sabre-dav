@@ -1,72 +1,52 @@
 <?php
 
-namespace Sabre\DAV\XML\Property;
+namespace Sabre\CardDAV\XML\Property;
 
 use
     Sabre\XML\Element,
     Sabre\XML\Reader,
-    Sabre\XML\Writer;
+    Sabre\XML\Writer,
+    Sabre\DAV\Exception\CannotDeserialize,
+    Sabre\CardDAV\Plugin;
 
 /**
- * Href property
+ * Supported-address-data property
  *
- * This class represents any WebDAV property that contains a {DAV:}href
- * element, and there are many.
+ * This property is a representation of the supported-address-data property
+ * in the CardDAV namespace.
  *
- * It can support either 1 or more hrefs. If while unserializing no valid
- * {DAV:}href elements were found, this property will unserialize itself as
- * null.
+ * This property is defined in:
+ *
+ * http://tools.ietf.org/html/rfc6352#section-6.2.2
  *
  * @copyright Copyright (C) 2007-2013 Rooftop Solutions. All rights reserved.
  * @author Evert Pot (http://www.rooftopsolutions.nl/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
-class Href implements Element {
+class SupportedAddressData implements Element {
 
     /**
-     * List of uris
+     * supported versions
      *
      * @var array
      */
-    protected $hrefs;
+    protected $supportedData = array();
 
     /**
-     * Automatically prefix the url with the server base directory
+     * Creates the property
      *
-     * @var bool
+     * @param array|null $supportedData
      */
-    protected $autoPrefix = true;
+    public function __construct(array $supportedData = null) {
 
-    /**
-     * Constructor
-     *
-     * You must either pass a string for a single href, or an array of hrefs.
-     *
-     * If auto-prefix is set to false, the hrefs will be treated as absolute
-     * and not relative to the servers base uri.
-     *
-     * @param string|string[] $href
-     * @param bool $autoPrefix
-     */
-    public function __construct($hrefs, $autoPrefix = true) {
-
-        if (is_string($hrefs)) {
-            $hrefs = [$hrefs];
+        if (is_null($supportedData)) {
+            $supportedData = array(
+                array('contentType' => 'text/vcard', 'version' => '3.0'),
+                // array('contentType' => 'text/vcard', 'version' => '4.0'),
+            );
         }
-        $this->hrefs = $hrefs;
-        $this->autoPrefix = $autoPrefix;
 
-
-    }
-
-    /**
-     * Returns the hrefs as an array
-     *
-     * @return array
-     */
-    public function getHrefs() {
-
-        return $this->hrefs;
+       $this->supportedData = $supportedData;
 
     }
 
@@ -87,11 +67,13 @@ class Href implements Element {
      */
     public function serializeXml(Writer $writer) {
 
-        foreach($this->getHrefs() as $href) {
-            if ($this->autoPrefix) {
-                $href = $writer->baseUri . $href;
-            }
-            $writer->writeElement('{DAV:}href', $href);
+        foreach($this->supportedData as $supported) {
+            $writer->startElement('{' . Plugin::NS_CARDDAV . '}address-data-type');
+            $writer->writeAttributes([
+                'content-type' => $supported['contentType'],
+                'version' => $supported['version']
+                ]);
+            $writer->endElement(); // address-data-type
         }
 
     }
@@ -119,17 +101,7 @@ class Href implements Element {
      */
     static public function deserializeXml(Reader $reader) {
 
-        $hrefs = [];
-        foreach($reader->parseInnerTree() as $elem) {
-            if ($elem['name'] !== '{DAV:}href')
-                continue;
-
-            $hrefs[] = $elem['value'];
-
-        }
-        if ($hrefs) {
-            return new self($hrefs);
-        }
+        throw new CannotDeserialize('This element does not have a deserializer');
 
     }
 

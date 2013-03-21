@@ -73,13 +73,14 @@ class Plugin extends DAV\ServerPlugin {
         $server->protectedProperties[] = '{' . self::NS_CARDDAV . '}addressbook-home-set';
         $server->protectedProperties[] = '{' . self::NS_CARDDAV . '}supported-collation-set';
 
-        $server->propertyMap['{http://calendarserver.org/ns/}me-card'] = 'Sabre\\DAV\\Property\\Href';
-
         $elementMap = [
 
             // Requests
             '{' . self::NS_CARDDAV . '}addressbook-multiget' => 'Sabre\\CardDAV\\XML\\Request\\AddressBookMultiGetReport',
             '{' . self::NS_CARDDAV . '}addressbook-query'    => 'Sabre\\CardDAV\\XML\\Request\\AddressBookQueryReport',
+
+            // Properties
+            '{http://calendarserver.org/ns/}me-card' => 'Sabre\\DAV\\XML\\Property\\Href',
 
             // Other
             '{' . self::NS_CARDDAV . '}prop-filter'   => 'Sabre\\CardDAV\\XML\\Filter\\PropFilter',
@@ -150,13 +151,13 @@ class Plugin extends DAV\ServerPlugin {
                 $principalId = $node->getName();
                 $addressbookHomePath = self::ADDRESSBOOK_ROOT . '/' . $principalId . '/';
                 unset($requestedProperties[array_search($addHome, $requestedProperties)]);
-                $returnedProperties[200][$addHome] = new DAV\Property\Href($addressbookHomePath);
+                $returnedProperties[200][$addHome] = new DAV\XML\Property\Href($addressbookHomePath);
             }
 
             $directories = '{' . self::NS_CARDDAV . '}directory-gateway';
             if ($this->directories && in_array($directories, $requestedProperties)) {
                 unset($requestedProperties[array_search($directories, $requestedProperties)]);
-                $returnedProperties[200][$directories] = new DAV\Property\HrefList($this->directories);
+                $returnedProperties[200][$directories] = new DAV\XML\Property\Href($this->directories);
             }
 
         }
@@ -186,7 +187,7 @@ class Plugin extends DAV\ServerPlugin {
                 $props = $this->server->getProperties($node->getOwner(), array('{http://sabredav.org/ns}vcard-url'));
                 if (isset($props['{http://sabredav.org/ns}vcard-url'])) {
 
-                    $returnedProperties[200][$meCardProp] = new DAV\Property\Href(
+                    $returnedProperties[200][$meCardProp] = new DAV\XML\Property\Href(
                         $props['{http://sabredav.org/ns}vcard-url']
                     );
                     $pos = array_search($meCardProp, $requestedProperties);
@@ -223,8 +224,8 @@ class Plugin extends DAV\ServerPlugin {
         $value = $mutations[$meCard];
         unset($mutations[$meCard]);
 
-        if ($value instanceof DAV\Property\IHref) {
-            $value = $value->getHref();
+        if ($value instanceof DAV\XML\Property\Href) {
+            $value = $value->getHrefs()[0];
             $value = $this->server->calculateUri($value);
         } elseif (!is_null($value)) {
             $result[400][$meCard] = null;
