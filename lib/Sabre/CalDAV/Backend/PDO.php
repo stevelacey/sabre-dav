@@ -1008,7 +1008,7 @@ class PDO extends AbstractBackend implements SyncSupport, SubscriptionSupport {
         $values = [
             ':principaluri' => $principalUri,
             ':uri'          => $uri,
-            ':source'       => $properties['{http://calendarserver.org/ns/}source']->getHref(),
+            ':source'       => $properties['{http://calendarserver.org/ns/}source']->getHrefs()[0],
             ':lastmodified' => time(),
         ];
 
@@ -1077,7 +1077,7 @@ class PDO extends AbstractBackend implements SyncSupport, SubscriptionSupport {
         foreach($mutations as $propertyName=>$propertyValue) {
 
             if ($propertyName === '{http://calendarserver.org/ns/}source') {
-                $newValues['source'] = $propertyValue->getHref();
+                $newValues['source'] = $propertyValue->getHrefs()[0];
             } else {
                 // Checking the property map
                 if (!isset($this->subscriptionPropertyMap[$propertyName])) {

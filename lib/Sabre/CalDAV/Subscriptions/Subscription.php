@@ -5,7 +5,7 @@ namespace Sabre\CalDAV\Subscriptions;
 use
     Sabre\DAV\Collection,
     Sabre\CalDAV\Backend\SubscriptionSupport,
-    Sabre\DAV\Property\Href,
+    Sabre\DAV\XML\Property\Href,
     Sabre\DAVACL\IACL,
     Sabre\DAV\Exception\MethodNotAllowed;
 
