@@ -8,8 +8,8 @@ use Sabre\VObject;
  * This unittests is created to find out why recurring events have wrong DTSTART value
  *
  *
- * @copyright Copyright (C) 2007-2013 Rooftop Solutions. All rights reserved.
- * @author Evert Pot (http://www.rooftopsolutions.nl/)
+ * @copyright Copyright (C) 2007-2013 fruux GmbH (https://fruux.com/).
+ * @author Evert Pot (http://evertpot.com/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
 class ExpandEventsDTSTARTandDTENDbyDayTest extends \Sabre\DAVServerTest {
@@ -91,10 +91,10 @@ END:VCALENDAR
 
                 if ($child->name == 'DTSTART') {
                     // DTSTART has to be one of two valid values
-                    $this->assertContains($child->value, array('20120214T171500Z', '20120216T171500Z'), 'DTSTART is not a valid value: '.$child->value);
+                    $this->assertContains($child->getValue(), array('20120214T171500Z', '20120216T171500Z'), 'DTSTART is not a valid value: '.$child->getValue());
                 } elseif ($child->name == 'DTEND') {
                     // DTEND has to be one of two valid values
-                    $this->assertContains($child->value, array('20120214T181500Z', '20120216T181500Z'), 'DTEND is not a valid value: '.$child->value);
+                    $this->assertContains($child->getValue(), array('20120214T181500Z', '20120216T181500Z'), 'DTEND is not a valid value: '.$child->getValue());
                 }
             }
         }

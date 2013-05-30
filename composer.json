@@ -9,13 +9,13 @@
         {
             "name": "Evert Pot",
             "email": "evert@rooftopsolutions.nl",
-            "homepage" : "http://www.rooftopsolutions.nl/",
+            "homepage" : "http://evertpot.com/",
             "role" : "Developer"
         }
     ],
     "require": {
         "php"           : ">=5.4.1",
-        "sabre/vobject" : "2.1.*@dev",
+        "sabre/vobject" : "3.0.*@dev",
         "sabre/xml"     : "dev-master",
         "ext-dom": "*",
         "ext-pcre": "*",
@@ -51,7 +51,7 @@
     },
     "support" : {
         "forum" : "https://groups.google.com/group/sabredav-discuss",
-        "source" : "https://github.com/evert/sabredav"
+        "source" : "https://github.com/fruux/sabre-dav"
     },
     "bin" : [
         "bin/sabredav",

@@ -12,8 +12,8 @@ use Sabre\DAV;
  *  * {DAV:}current-user-principal property from RFC5397
  *  * {DAV:}principal-collection-set property from RFC3744
  *
- * @copyright Copyright (C) 2007-2013 Rooftop Solutions. All rights reserved.
- * @author Evert Pot (http://www.rooftopsolutions.nl/)
+ * @copyright Copyright (C) 2007-2013 fruux GmbH (https://fruux.com/).
+ * @author Evert Pot (http://evertpot.com/)
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
 class Plugin extends DAV\ServerPlugin {
@@ -38,6 +38,13 @@ class Plugin extends DAV\ServerPlugin {
      * @var string
      */
     private $realm;
+
+    /**
+     * @return string
+     */
+    public function getRealm() {
+        return $this->realm;
+    }
 
     /**
      * __construct
@@ -105,7 +112,7 @@ class Plugin extends DAV\ServerPlugin {
      */
     public function beforeMethod($method, $uri) {
 
-        $this->authBackend->authenticate($this->server,$this->realm);
+        $this->authBackend->authenticate($this->server,$this->getRealm());
 
     }
 
