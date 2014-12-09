@@ -107,11 +107,18 @@ class IMipPlugin extends DAV\ServerPlugin {
 
         $summary = $iTipMessage->message->VEVENT->SUMMARY;
 
-        $sender = $iTipMessage->sender;
+        if (parse_url($iTipMessage->sender, PHP_URL_SCHEME)!=='mailto')
+            return;
+
+        if (parse_url($iTipMessage->recipient, PHP_URL_SCHEME)!=='mailto')
+            return;
+
+        $sender = substr($iTipMessage->sender,7);
+        $recipient = substr($iTipMessage->recipient,7);
+
         if ($iTipMessage->senderName) {
             $sender = $iTipMessage->senderName . ' <' . $sender . '>';
         }
-        $recipient = $iTipMessage->recipient;
         if ($iTipMessage->recipientName) {
             $recipient = $iTipMessage->recipientName . ' <' . $recipient . '>';
         }
@@ -166,5 +173,26 @@ class IMipPlugin extends DAV\ServerPlugin {
     }
 
     // @codeCoverageIgnoreEnd
+
+    /**
+     * Returns a bunch of meta-data about the plugin.
+     *
+     * Providing this information is optional, and is mainly displayed by the
+     * Browser plugin.
+     *
+     * The description key in the returned array may contain html and will not
+     * be sanitized.
+     *
+     * @return array
+     */
+    function getPluginInfo() {
+
+        return [
+            'name'        => $this->getPluginName(),
+            'description' => 'Email delivery (rfc6037) for CalDAV scheduling',
+            'link'        => 'http://sabre.io/dav/scheduling/',
+        ];
+
+    }
 
 }

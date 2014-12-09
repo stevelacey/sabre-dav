@@ -291,8 +291,7 @@ class Plugin extends ServerPlugin {
             $oldObj = null;
         }
 
-        $this->processICalendarChange($oldObj, $vCal, $addresses);
-        $modified = true;
+        $this->processICalendarChange($oldObj, $vCal, $addresses, [], $modified);
 
     }
 
@@ -509,12 +508,16 @@ class Plugin extends ServerPlugin {
      * @param VCalendar $newObject
      * @param array $addresses
      * @param array $ignore Any addresses to not send messages to.
+     * @param boolean $modified A marker to indicate that the original object
+     *   modified by this process.
      * @return void
      */
-    protected function processICalendarChange($oldObject = null, VCalendar $newObject, array $addresses, array $ignore = []) {
+    protected function processICalendarChange($oldObject = null, VCalendar $newObject, array $addresses, array $ignore = [], &$modified = false) {
 
         $broker = new ITip\Broker();
         $messages = $broker->parseEvent($newObject, $addresses, $oldObject);
+
+        if ($messages) $modified = true;
 
         foreach($messages as $message) {
 
@@ -782,6 +785,8 @@ class Plugin extends ServerPlugin {
 
         // Grabbing the calendar list
         $objects = [];
+        $calendarTimeZone = new DateTimeZone('UTC');
+
         foreach($this->server->tree->getNodeForPath($homeSet)->getChildren() as $node) {
             if (!$node instanceof ICalendar) {
                 continue;
@@ -802,8 +807,6 @@ class Plugin extends ServerPlugin {
             if (isset($props[$ctz])) {
                 $vtimezoneObj = VObject\Reader::read($props[$ctz]);
                 $calendarTimeZone = $vtimezoneObj->VTIMEZONE->getTimeZone();
-            } else {
-                $calendarTimeZone = new DateTimeZone('UTC');
             }
 
             // Getting the list of object uris within the time-range
@@ -871,4 +874,24 @@ class Plugin extends ServerPlugin {
 
     }
 
+    /**
+     * Returns a bunch of meta-data about the plugin.
+     *
+     * Providing this information is optional, and is mainly displayed by the
+     * Browser plugin.
+     *
+     * The description key in the returned array may contain html and will not
+     * be sanitized.
+     *
+     * @return array
+     */
+    function getPluginInfo() {
+
+        return [
+            'name'        => $this->getPluginName(),
+            'description' => 'Adds calendar-auto-schedule, as defined in rf6868',
+            'link'        => 'http://sabre.io/dav/scheduling/',
+        ];
+
+    }
 }

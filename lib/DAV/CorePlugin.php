@@ -255,7 +255,7 @@ class CorePlugin extends ServerPlugin {
         $subRequest->setMethod('GET');
 
         try {
-            $this->server->invokeMethod($subRequest, $response);
+            $this->server->invokeMethod($subRequest, $response, false);
             $response->setBody('');
         } catch (Exception\NotImplemented $e) {
             // Some clients may do HEAD requests on collections, however, GET
@@ -903,6 +903,27 @@ class CorePlugin extends ServerPlugin {
             }
 
         });
+
+    }
+
+    /**
+     * Returns a bunch of meta-data about the plugin.
+     *
+     * Providing this information is optional, and is mainly displayed by the
+     * Browser plugin.
+     *
+     * The description key in the returned array may contain html and will not
+     * be sanitized.
+     *
+     * @return array
+     */
+    function getPluginInfo() {
+
+        return [
+            'name'        => $this->getPluginName(),
+            'description' => 'The Core plugin provides a lot of the basic functionality required by WebDAV, such as a default implementation for all HTTP and WebDAV methods.',
+            'link'        => null,
+        ];
 
     }
 }

@@ -41,7 +41,7 @@ class GuessContentType extends DAV\ServerPlugin {
 
         // groupware
         'ics' => 'text/calendar',
-        'vcf' => 'text/x-vcard',
+        'vcf' => 'text/vcard',
 
         // text
         'txt' => 'text/plain',
@@ -92,8 +92,10 @@ class GuessContentType extends DAV\ServerPlugin {
 
         // Just grabbing the extension
         $extension = strtolower(substr($fileName,strrpos($fileName,'.')+1));
-        if (isset($this->extensionMap[$extension]))
+        if (isset($this->extensionMap[$extension])) {
             return $this->extensionMap[$extension];
+        }
+        return 'application/octet-stream';
 
     }
 
